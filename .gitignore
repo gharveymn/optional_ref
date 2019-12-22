@@ -1,0 +1,9 @@
+/*
+!.gitignore
+!.gitmodules
+!LICENSE
+!README.md
+!CMakeLists.txt
+!/include
+!/source
+!/test
