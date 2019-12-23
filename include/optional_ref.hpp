@@ -10,6 +10,8 @@
 #ifndef OPTIONAL_REF_HPP
 #define OPTIONAL_REF_HPP
 
+#include <functional>
+
 namespace gch
 {
   struct nullopt_t
@@ -20,11 +22,11 @@ namespace gch
   
   static constexpr nullopt_t nullopt { nullopt_t::engage::value };
   
-  class bad_optional_ref_access : public std::exception
+  class bad_optional_access : public std::exception
   {
   public:
-    bad_optional_ref_access (void)  = default;
-    virtual ~bad_optional_ref_access() noexcept = default;
+    bad_optional_access (void)  = default;
+    virtual ~bad_optional_access ( ) noexcept = default;
     const char* what (void) const noexcept override { return "bad optional_ref access"; }
   };
   
@@ -39,7 +41,7 @@ namespace gch
   private:
     
     template <typename U>
-    using constructible_from = std::is_constructible<typename optional_ref<U>::pointer, pointer>;
+    using constructible_from = std::is_constructible<pointer, typename optional_ref<U>::pointer>;
   
     template <typename U>
     using convertible_from = std::is_convertible<typename optional_ref<U>::pointer, pointer>;
@@ -51,6 +53,10 @@ namespace gch
     struct is_optional_ref<optional_ref<T>> : std::true_type { };
     
   public:
+    
+    //! For the record, I don't think the explicit conversions are even possible
+    //! since we are only using raw pointers, but I can't find a definitive 
+    //! reference to that fact, so they stay.
     
     optional_ref            (void)                    = default;
     optional_ref            (const optional_ref&)     = default;
@@ -109,7 +115,7 @@ namespace gch
     reference value (void) const
     {
       if (! has_value ())
-        throw bad_optional_ref_access ();
+        throw bad_optional_access();
       return *m_ptr;
     }
     
@@ -134,11 +140,11 @@ namespace gch
               typename std::enable_if<std::is_lvalue_reference<U>::value, bool>::type = true>
     reference emplace (U&& ref)
     {
-      m_ptr = std::addressof (ref);
+      return *(m_ptr = std::addressof (ref));
     }
   
     template <typename U,
-        typename std::enable_if<! std::is_lvalue_reference<U>::value, bool>::type = false>
+              typename std::enable_if<! std::is_lvalue_reference<U>::value, bool>::type = false>
     reference emplace (U&&) = delete;
 
   private:
@@ -165,28 +171,28 @@ namespace gch
   constexpr auto operator< (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l < *r)) -> decltype (*l < *r)
   {
-    return r.has_value () && (! l.has_value || (*l < *r));
+    return r.has_value () && (! l.has_value () || (*l < *r));
   }
   
   template <typename T, typename U>
   constexpr auto operator> (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l > *r)) -> decltype (*l > *r)
   {
-    return l.has_value () && (! r.has_value || (*l > *r));
+    return l.has_value () && (! r.has_value () || (*l > *r));
   }
   
   template <typename T, typename U>
   constexpr auto operator<= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l <= *r)) -> decltype (*l <= *r)
   {
-    return ! l.has_value () || (r.has_value && (*l <= *r));
+    return ! l.has_value () || (r.has_value () && (*l <= *r));
   }
   
   template <typename T, typename U>
   constexpr auto operator>= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l >= *r)) -> decltype (*l >= *r)
   {
-    return ! r.has_value () || (l.has_value && (*l >= *r));
+    return ! r.has_value () || (l.has_value () && (*l >= *r));
   }
   
   template <typename T>
@@ -277,7 +283,7 @@ namespace gch
   
   template <typename T, typename U>
   constexpr auto operator!= (const optional_ref<T>& l, const U& r)
-    noexcept (noexcept (l != *r)) -> decltype (l != *r)
+    noexcept (noexcept (*l != r)) -> decltype (*l != r)
   {
     return (! l.has_value () || (*l != r));
   }
@@ -321,14 +327,14 @@ namespace gch
   constexpr auto operator<= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l <= r)) -> decltype (*l <= r)
   {
-    return (! l.has_value () && (*l <= r));
+    return (! l.has_value () || (*l <= r));
   }
   
   template <typename T, typename U>
   constexpr auto operator<= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l <= *r)) -> decltype (l <= *r)
   {
-    return (r.has_value () || (l <= *r));
+    return (r.has_value () && (l <= *r));
   }
   
   template <typename T, typename U>
@@ -352,10 +358,10 @@ namespace gch
   }
   
   template<typename T>
-  constexpr optional_ref<typename std::decay<T>::type>
-  make_optional(T&& ref)
-  { 
-    return optional_ref<typename std::decay<T>::type> { std::forward<T>(ref) }; 
+  constexpr optional_ref<typename std::remove_reference<T>::type>
+  make_optional_ref (T&& ref)
+  {
+    return optional_ref<typename std::remove_reference<T>::type> { std::forward<T>(ref) }; 
   }
 }
 
@@ -365,7 +371,7 @@ namespace std
   struct hash<gch::optional_ref<T>>
   {
   private:
-    using pointer = typename gch::optional_ref<T>::value_type;
+    using pointer = typename gch::optional_ref<T>::pointer;
   public:
     std::size_t operator() (const gch::optional_ref<T>& opt_ref) const 
       noexcept (noexcept (std::hash<pointer> {} (opt_ref.operator-> ())))
