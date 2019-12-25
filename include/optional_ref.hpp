@@ -125,7 +125,7 @@ namespace gch
               typename std::enable_if<convertible_from<U>::value, bool>::type = true
              >
     constexpr /* implicit */ optional_ref (const optional_ref<U>& other) noexcept
-      : m_ptr (other.operator->())
+      : m_ptr (other.get_pointer ())
     { }
   
     template <typename U,
@@ -133,11 +133,12 @@ namespace gch
               typename std::enable_if<! convertible_from<U>::value, bool>::type = false
              >
     constexpr explicit optional_ref (const optional_ref<U>& other) noexcept
-        : m_ptr (static_cast<pointer> (other.operator->()))
+        : m_ptr (static_cast<pointer> (other.get_pointer ()))
     { }
   
-    GCH_NODISCARD constexpr reference operator*     (void) const noexcept { return *m_ptr;           }
-    GCH_NODISCARD constexpr pointer   operator->    (void) const noexcept { return m_ptr;            }
+    GCH_NODISCARD constexpr pointer   get_pointer   (void) const noexcept { return m_ptr;            }
+    GCH_NODISCARD constexpr reference operator*     (void) const noexcept { return *get_pointer ();  }
+    GCH_NODISCARD constexpr pointer   operator->    (void) const noexcept { return get_pointer ();   }
     GCH_NODISCARD constexpr bool      has_value     (void) const noexcept { return m_ptr != nullptr; }
     GCH_NODISCARD constexpr explicit  operator bool (void) const noexcept { return has_value ();     }
   
@@ -160,15 +161,15 @@ namespace gch
       using std::swap;
       swap (this->m_ptr, other.m_ptr);
     }
-    
-    void reset (void) noexcept 
+  
+    GCH_CPP14_CONSTEXPR void reset (void) noexcept 
     {
       m_ptr = nullptr;
     }
     
     template <typename U,
               typename std::enable_if<std::is_lvalue_reference<U>::value, bool>::type = true>
-    reference emplace (U&& ref)
+    GCH_CONSTEXPR_ADDRESSOF reference emplace (U&& ref)
     {
       return *(m_ptr = std::addressof (ref));
     }
@@ -400,13 +401,9 @@ namespace gch
 template <typename T>
 struct std::hash<gch::optional_ref<T>>
 {
-private:
-  using pointer = typename gch::optional_ref<T>::pointer;
-public:
-  std::size_t operator() (const gch::optional_ref<T>& opt_ref) const 
-    noexcept (noexcept (std::hash<pointer> {} (opt_ref.operator-> ())))
+  constexpr std::size_t operator() (const gch::optional_ref<T>& opt_ref) const noexcept
   {
-    return std::hash<pointer> {} (opt_ref.operator-> ());
+    return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
   }
 };
 

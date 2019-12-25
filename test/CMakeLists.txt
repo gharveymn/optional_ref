@@ -1,19 +1,24 @@
 IF (OPTIONAL_REF_BUILD_TESTS)
-	SET(CMAKE_CXX_STANDARD 20)
-	SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  
+  SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-	ADD_EXECUTABLE(test main.cpp)
-	TARGET_LINK_LIBRARIES(test optional_ref)
-	
-	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		TARGET_COMPILE_OPTIONS(test PUBLIC "-stdlib=libc++")
-		TARGET_LINK_LIBRARIES(test -lc++ -lc++abi)
-	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-		# using Intel C++
-	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-		# using Visual Studio C++
-	endif()
-	
+  ADD_EXECUTABLE(test main.cpp)
+  TARGET_LINK_LIBRARIES(test optional_ref)
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    TARGET_COMPILE_OPTIONS(test PUBLIC "-stdlib=libc++")
+    TARGET_LINK_LIBRARIES(test -lc++ -lc++abi)
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    #    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    # using Intel C++
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # using Visual Studio C++
+  endif()
+
+  SET_TARGET_PROPERTIES(test PROPERTIES
+                        CXX_STANDARD          17
+                        CXX_STANDARD_REQUIRED NO
+                        CXX_EXTENSIONS        NO)
+
 ENDIF()
