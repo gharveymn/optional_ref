@@ -14,6 +14,14 @@ static_assert (std::is_trivially_copy_assignable<optional_ref<int>>::value, "");
 static_assert (std::is_trivially_move_assignable<optional_ref<int>>::value, "");
 static_assert (std::is_trivially_destructible<optional_ref<int>>::value, "");
 
+static constexpr int g_x = 0;
+
+#if __cpp_lib_addressof_constexpr
+static constexpr optional_ref<const int> g_rx { g_x };
+#else
+static optional_ref<const int> g_rx { g_x };
+#endif
+
 void print_test_header (const std::string& str)
 {
   std::cout << str << "... ";
@@ -83,7 +91,7 @@ void test_throw (void)
   
   try
   {
-    r.value ();    
+    int& x = r.value ();    
   }
   catch (const bad_optional_access& e) { static_cast<void> (e.what ()); }
   catch (...) { throw std::runtime_error ("optional_ref does not throw bad_optional_access"); }
@@ -323,10 +331,8 @@ void test_comparison (void)
   assert (  (rz      >= nullopt));
   assert (  (nullopt >= rz     ));
   
-  // compare with a value of different type
+  // compare with a value of different type (not equal)
   long vy = 22;
-  
-  // not equal
   assert (! (rx == vy));
   assert (! (vy == rx));
   assert (  (rx != vy));
@@ -340,7 +346,7 @@ void test_comparison (void)
   assert (! (rx >= vy));
   assert (  (vy >= rx));
   
-  // set equal
+  // compare with a value of different type (equal)
   vy = 11;
   assert (  (rx == vy));
   assert (  (vy == rx));
@@ -384,6 +390,7 @@ void test_comparison (void)
   assert (  (11 >= rx));
   
   // compare with optional_ref which is nullopt
+  rz.reset ();
   assert (! (rz == vy));
   assert (! (vy == rz));
   assert (  (rz != vy));

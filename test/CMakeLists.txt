@@ -1,1 +1,1 @@
-ADD_EXECUTABLE(optional_ref main.cpp)
+ADD_EXECUTABLE(test main.cpp)

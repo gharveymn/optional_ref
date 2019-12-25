@@ -12,21 +12,50 @@
 
 #include <functional>
 
+#if __has_cpp_attribute(nodiscard) >= 201603L
+#  define GCH_NODISCARD [[nodiscard]]
+#else
+#  define GCH_NODISCARD
+#endif
+
+#if __cpp_lib_addressof_constexpr >= 201603L
+#  define GCH_CONSTEXPR_ADDRESSOF constexpr
+#else
+#  define GCH_CONSTEXPR_ADDRESSOF
+#endif
+
+#if __cpp_inline_variables >= 201606
+#  define GCH_INLINE_VARS inline
+#else
+#  define GCH_INLINE_VARS
+#endif
+
+#if __cpp_lib_constexpr_algorithms >= 201806L
+#  define GCH_CONSTEXPR_SWAP constexpr
+#else
+#  define GCH_CONSTEXPR_SWAP
+#endif
+
+#if __cpp_constexpr >= 201304L
+#  define GCH_CPP14_CONSTEXPR constexpr
+#else 
+#  define GCH_CPP14_CONSTEXPR
+#endif
+
 namespace gch
 {
   struct nullopt_t
   {
-    enum class engage { value };
-    explicit constexpr nullopt_t (engage) noexcept { }
+    static constexpr struct engage_tag { } engage = { };
+    constexpr explicit nullopt_t (engage_tag) noexcept { }
   };
-  
-  static constexpr nullopt_t nullopt { nullopt_t::engage::value };
+
+  GCH_INLINE_VARS constexpr nullopt_t nullopt { nullopt_t::engage };
   
   class bad_optional_access : public std::exception
   {
   public:
-    bad_optional_access (void)  = default;
-    virtual ~bad_optional_access ( ) noexcept = default;
+    GCH_NODISCARD
     const char* what (void) const noexcept override { return "bad optional_ref access"; }
   };
   
@@ -76,7 +105,7 @@ namespace gch
               typename = typename std::enable_if<constructible_from<U>::value>::type,
               typename std::enable_if<convertible_from<U>::value, bool>::type = true
              >
-    constexpr /* implicit */ optional_ref (U& ref) noexcept
+    GCH_CONSTEXPR_ADDRESSOF /* implicit */ optional_ref (U& ref) noexcept
       : m_ptr (std::addressof (ref))
     { }
   
@@ -84,7 +113,7 @@ namespace gch
               typename = typename std::enable_if<constructible_from<U>::value>::type,
               typename std::enable_if<! convertible_from<U>::value, bool>::type = false
              >
-    constexpr explicit optional_ref (U& ref) noexcept
+    GCH_CONSTEXPR_ADDRESSOF explicit optional_ref (U& ref) noexcept
       : m_ptr (std::addressof (static_cast<reference> (ref)))
     { }
   
@@ -103,29 +132,27 @@ namespace gch
     constexpr explicit optional_ref (const optional_ref<U>& other) noexcept
         : m_ptr (static_cast<pointer> (other.operator->()))
     { }
-    
-    constexpr reference operator*     (void) const noexcept { return *m_ptr;           }
-    constexpr pointer   operator->    (void) const noexcept { return m_ptr;            }
-    constexpr bool      has_value     (void) const noexcept { return m_ptr != nullptr; }
-    constexpr explicit  operator bool (void) const noexcept { return has_value ();     }
-
-#if __cpp_constexpr > 200704L
-    constexpr
-#endif
-    reference value (void) const
+  
+    GCH_NODISCARD constexpr reference operator*     (void) const noexcept { return *m_ptr;           }
+    GCH_NODISCARD constexpr pointer   operator->    (void) const noexcept { return m_ptr;            }
+    GCH_NODISCARD constexpr bool      has_value     (void) const noexcept { return m_ptr != nullptr; }
+    GCH_NODISCARD constexpr explicit  operator bool (void) const noexcept { return has_value ();     }
+  
+    GCH_NODISCARD 
+    GCH_CPP14_CONSTEXPR reference value (void) const
     {
       if (! has_value ())
         throw bad_optional_access();
       return *m_ptr;
     }
     
-    template <typename U>
+    template <typename U> GCH_NODISCARD
     constexpr reference value_or (U&& default_value) const noexcept
     {
       return has_value () ? *m_ptr : static_cast<reference> (std::forward<U> (default_value));
     }
-    
-    void swap (optional_ref& other) noexcept 
+  
+    GCH_CONSTEXPR_SWAP void swap (optional_ref& other) noexcept 
     {
       using std::swap;
       swap (this->m_ptr, other.m_ptr);
@@ -153,198 +180,198 @@ namespace gch
     
   };
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator== (const optional_ref<T>& l, const optional_ref<U>& r) 
     noexcept (noexcept (*l == *r)) -> decltype (*l == *r)
   {
     return (l.has_value () == r.has_value ()) && (! l.has_value () || (*l == *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l != *r)) -> decltype (*l != *r)
   {
     return (l.has_value () != r.has_value ()) || (l.has_value () && (*l != *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l < *r)) -> decltype (*l < *r)
   {
     return r.has_value () && (! l.has_value () || (*l < *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l > *r)) -> decltype (*l > *r)
   {
     return l.has_value () && (! r.has_value () || (*l > *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l <= *r)) -> decltype (*l <= *r)
   {
     return ! l.has_value () || (r.has_value () && (*l <= *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l >= *r)) -> decltype (*l >= *r)
   {
     return ! r.has_value () || (l.has_value () && (*l >= *r));
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator== (const optional_ref<T>& l, nullopt_t) noexcept 
   {
     return ! l.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator== (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return ! r.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator!= (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return l.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator!= (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return r.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator< (const optional_ref<T>&, nullopt_t) noexcept
   {
     return false;
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator< (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return r.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator> (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return l.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator> (nullopt_t, const optional_ref<T>&) noexcept
   {
     return false;
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator<= (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return ! l.has_value ();
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator<= (nullopt_t, const optional_ref<T>&) noexcept
   {
     return true;
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator>= (const optional_ref<T>&, nullopt_t) noexcept
   {
     return true;
   }
   
-  template <typename T>
+  template <typename T> GCH_NODISCARD
   constexpr bool operator>= (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return ! r.has_value ();
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator== (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l == r)) -> decltype (*l == r)
   {
     return (l.has_value () && (*l == r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator== (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l == *r)) -> decltype (l == *r)
   {
     return (r.has_value () && (l == *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l != r)) -> decltype (*l != r)
   {
     return (! l.has_value () || (*l != r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l != *r)) -> decltype (l != *r)
   {
     return (! r.has_value () || (l != *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l < r)) -> decltype (*l < r)
   {
     return (! l.has_value () || (*l < r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l < *r)) -> decltype (l < *r)
   {
     return (r.has_value () && (l < *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l > r)) -> decltype (*l > r)
   {
     return (l.has_value () && (*l > r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l > *r)) -> decltype (l > *r)
   {
     return (! r.has_value () || (l > *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l <= r)) -> decltype (*l <= r)
   {
     return (! l.has_value () || (*l <= r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l <= *r)) -> decltype (l <= *r)
   {
     return (r.has_value () && (l <= *r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l >= r)) -> decltype (*l >= r)
   {
     return (l.has_value () && (*l >= r));
   }
   
-  template <typename T, typename U>
+  template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l >= *r)) -> decltype (l >= *r)
   {
@@ -352,16 +379,18 @@ namespace gch
   }
   
   template <typename T>
-  inline void swap (optional_ref<T>& l, optional_ref<T>& r) noexcept
+  GCH_CONSTEXPR_SWAP inline void 
+  swap (optional_ref<T>& l, optional_ref<T>& r) noexcept
   {
     l.swap (r);
   }
   
-  template<typename T>
-  constexpr optional_ref<typename std::remove_reference<T>::type>
+  template<typename T> GCH_NODISCARD
+  GCH_CONSTEXPR_ADDRESSOF optional_ref<typename std::remove_reference<T>::type>
   make_optional_ref (T&& ref)
   {
-    return optional_ref<typename std::remove_reference<T>::type> { std::forward<T>(ref) }; 
+    using decayed_type = typename std::remove_reference<T>::type;
+    return optional_ref<decayed_type> { std::forward<T>(ref) }; 
   }
 }
 
@@ -380,5 +409,11 @@ namespace std
     }
   };
 }
+
+#undef GCH_NODISCARD
+#undef GCH_CONSTEXPR_ADDRESSOF
+#undef GCH_INLINE_VARS
+#undef GCH_CONSTEXPR_SWAP
+#undef GCH_CPP14_CONSTEXPR
 
 #endif
