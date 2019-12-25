@@ -169,7 +169,7 @@ namespace gch
     
     template <typename U,
               typename std::enable_if<std::is_lvalue_reference<U>::value, bool>::type = true>
-    GCH_CONSTEXPR_ADDRESSOF reference emplace (U&& ref)
+    GCH_CONSTEXPR_ADDRESSOF reference emplace (U&& ref) noexcept
     {
       return *(m_ptr = std::addressof (ref));
     }
@@ -390,11 +390,10 @@ namespace gch
   }
   
   template<typename T> GCH_NODISCARD
-  GCH_CONSTEXPR_ADDRESSOF optional_ref<typename std::remove_reference<T>::type>
-  make_optional_ref (T&& ref)
+  GCH_CONSTEXPR_ADDRESSOF inline optional_ref<typename std::remove_reference<T>::type>
+  make_optional_ref (T&& ref) noexcept
   {
-    using decayed_type = typename std::remove_reference<T>::type;
-    return optional_ref<decayed_type> { std::forward<T>(ref) }; 
+    return optional_ref<typename std::remove_reference<T>::type> { std::forward<T>(ref) }; 
   }
 }
 
