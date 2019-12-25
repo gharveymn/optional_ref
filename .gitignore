@@ -6,4 +6,6 @@
 !CMakeLists.txt
 !/include
 !/source
+!/src
 !/test
+!/cmake
