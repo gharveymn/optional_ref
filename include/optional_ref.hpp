@@ -10,7 +10,10 @@
 #ifndef OPTIONAL_REF_HPP
 #define OPTIONAL_REF_HPP
 
-#include <functional>
+#include <memory>
+#include <type_traits>
+#include <typeindex>
+#include <utility>
 
 #if __has_cpp_attribute(nodiscard) >= 201603L
 #  define GCH_NODISCARD [[nodiscard]]
@@ -394,21 +397,18 @@ namespace gch
   }
 }
 
-namespace std
+template <typename T>
+struct std::hash<gch::optional_ref<T>>
 {
-  template <typename T>
-  struct hash<gch::optional_ref<T>>
+private:
+  using pointer = typename gch::optional_ref<T>::pointer;
+public:
+  std::size_t operator() (const gch::optional_ref<T>& opt_ref) const 
+    noexcept (noexcept (std::hash<pointer> {} (opt_ref.operator-> ())))
   {
-  private:
-    using pointer = typename gch::optional_ref<T>::pointer;
-  public:
-    std::size_t operator() (const gch::optional_ref<T>& opt_ref) const 
-      noexcept (noexcept (std::hash<pointer> {} (opt_ref.operator-> ())))
-    {
-      return std::hash<pointer> {} (opt_ref.operator-> ());
-    }
-  };
-}
+    return std::hash<pointer> {} (opt_ref.operator-> ());
+  }
+};
 
 #undef GCH_NODISCARD
 #undef GCH_CONSTEXPR_ADDRESSOF
