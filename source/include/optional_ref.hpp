@@ -47,14 +47,22 @@
 
 namespace gch
 {
+  /**
+   * A struct that provides semantics for
+   * empty `optional_ref`s.
+   */
   struct nullopt_t
   {
-    static constexpr struct engage_tag { } engage = { };
+    static constexpr struct engage_tag { } engage { };
     constexpr explicit nullopt_t (engage_tag) noexcept { }
   };
 
   GCH_INLINE_VARS constexpr nullopt_t nullopt { nullopt_t::engage };
   
+  /**
+   * An exception class for cases of bad access
+   * to an `optional_ref`.
+   */
   class bad_optional_access : public std::exception
   {
   public:
@@ -62,13 +70,22 @@ namespace gch
     const char* what (void) const noexcept override { return "bad optional_ref access"; }
   };
   
+  /**
+   * A reference wrapper which provides semantics similar to `std::optional`.
+   * 
+   * @tparam Value the value type of the stored reference.
+   */
   template <typename Value>
   class optional_ref
   {
   public:
-    using value_type = Value;
-    using reference  = typename std::add_lvalue_reference<Value>::type;
-    using pointer    = typename std::add_pointer<Value>::type;
+    
+    static_assert(! std::is_reference<Value>::value, 
+      "optional_ref expects a value type as a template argument, not a reference.");
+    
+    using value_type = Value;  /*!< The value type of the stored reference */
+    using reference  = Value&; /*!< The reference type to be wrapped */
+    using pointer    = Value*; /*!< The pointer type to the value type */
     
   private:
     
@@ -97,6 +114,12 @@ namespace gch
     optional_ref& operator= (optional_ref&&) noexcept = default;
     ~optional_ref           (void)                    = default;
     
+    /**
+     * Constructor
+     * 
+     * A constructor to implicitly convert nullopt_t so we can
+     * use syntax like `optional_ref<int> x = nullopt`.
+     */
     constexpr /* implicit */ optional_ref (nullopt_t) noexcept { };
   
     /**
@@ -334,18 +357,15 @@ namespace gch
     
   };
   
-  // FIXME: should these compare by address, rather than 
-  //  by value since we are using rebind semantics? 
-  
   /**
    * An equality comparison function
    * 
    * We compare by value, not by address.
    * 
-   * @tparam T the value type of `l`
-   * @tparam U the value type of `r`
-   * @param l an `optional_ref`
-   * @param r an `optional_ref`
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
    * @return the result of the equality comparison.
    * 
    * @see std::optional::operator==
@@ -357,6 +377,19 @@ namespace gch
     return (l.has_value () == r.has_value ()) && (! l.has_value () || (*l == *r));
   }
   
+  /**
+   * An inequality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   * @return the result of the inequality comparison.
+   * 
+   * @see std::optional::operator!=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l != *r)) -> decltype (*l != *r)
@@ -364,6 +397,19 @@ namespace gch
     return (l.has_value () != r.has_value ()) || (l.has_value () && (*l != *r));
   }
   
+  /**
+   * An less-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than comparison.
+   * 
+   * @see std::optional::operator<
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l < *r)) -> decltype (*l < *r)
@@ -371,6 +417,19 @@ namespace gch
     return r.has_value () && (! l.has_value () || (*l < *r));
   }
   
+  /**
+   * An greater-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than comparison.
+   * 
+   * @see std::optional::operator>
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l > *r)) -> decltype (*l > *r)
@@ -378,6 +437,19 @@ namespace gch
     return l.has_value () && (! r.has_value () || (*l > *r));
   }
   
+  /**
+   * An less-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than-equal comparison.
+   * 
+   * @see std::optional::operator<=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l <= *r)) -> decltype (*l <= *r)
@@ -385,6 +457,19 @@ namespace gch
     return ! l.has_value () || (r.has_value () && (*l <= *r));
   }
   
+  /**
+   * An greater-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U the value type of `r`.
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than-equal comparison.
+   * 
+   * @see std::optional::operator>=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l >= *r)) -> decltype (*l >= *r)
@@ -392,78 +477,235 @@ namespace gch
     return ! r.has_value () || (l.has_value () && (*l >= *r));
   }
   
+  /**
+   * An equality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the equality comparison.
+   * 
+   * @see std::optional::operator==
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator== (const optional_ref<T>& l, nullopt_t) noexcept 
   {
     return ! l.has_value ();
   }
   
+  /**
+   * An equality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the equality comparison.
+   * 
+   * @see std::optional::operator==
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator== (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return ! r.has_value ();
   }
   
+  /**
+   * An inequality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the inequality comparison.
+   * 
+   * @see std::optional::operator!=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator!= (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return l.has_value ();
   }
   
+  /**
+   * An inequality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the inequality comparison.
+   * 
+   * @see std::optional::operator!=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator!= (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return r.has_value ();
   }
   
+  /**
+   * An less-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the less-than comparison.
+   * 
+   * @see std::optional::operator<
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator< (const optional_ref<T>&, nullopt_t) noexcept
   {
     return false;
   }
   
+  /**
+   * An less-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than comparison.
+   * 
+   * @see std::optional::operator<
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator< (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return r.has_value ();
   }
   
+  /**
+   * An greater-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the greater-than comparison.
+   * 
+   * @see std::optional::operator>
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator> (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return l.has_value ();
   }
   
+  /**
+   * An greater-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than comparison.
+   * 
+   * @see std::optional::operator>
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator> (nullopt_t, const optional_ref<T>&) noexcept
   {
     return false;
   }
   
+  /**
+   * An less-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the less-than-equal comparison.
+   * 
+   * @see std::optional::operator<=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator<= (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return ! l.has_value ();
   }
   
+  /**
+   * An less-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than-equal comparison.
+   * 
+   * @see std::optional::operator<=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator<= (nullopt_t, const optional_ref<T>&) noexcept
   {
     return true;
   }
   
+  /**
+   * An greater-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @param l an `optional_ref`.
+   * @param r a `nullopt_t`.
+   * @return the result of the greater-than-equal comparison.
+   * 
+   * @see std::optional::operator>=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator>= (const optional_ref<T>&, nullopt_t) noexcept
   {
     return true;
   }
   
+  /**
+   * An greater-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @param l a `nullopt_t`.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than-equal comparison.
+   * 
+   * @see std::optional::operator>=
+   */
   template <typename T> GCH_NODISCARD
   constexpr bool operator>= (nullopt_t, const optional_ref<T>& r) noexcept
   {
     return ! r.has_value ();
   }
   
+  /**
+   * An equality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the equality comparison.
+   * 
+   * @see std::optional::operator==
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator== (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l == r)) -> decltype (*l == r)
@@ -471,6 +713,19 @@ namespace gch
     return (l.has_value () && (*l == r));
   }
   
+  /**
+   * An equality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the equality comparison.
+   * 
+   * @see std::optional::operator==
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator== (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l == *r)) -> decltype (l == *r)
@@ -478,6 +733,19 @@ namespace gch
     return (r.has_value () && (l == *r));
   }
   
+  /**
+   * An inequality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the inequality comparison.
+   * 
+   * @see std::optional::operator!=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l != r)) -> decltype (*l != r)
@@ -485,6 +753,19 @@ namespace gch
     return (! l.has_value () || (*l != r));
   }
   
+  /**
+   * An inequality comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the inequality comparison.
+   * 
+   * @see std::optional::operator!=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator!= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l != *r)) -> decltype (l != *r)
@@ -492,6 +773,19 @@ namespace gch
     return (! r.has_value () || (l != *r));
   }
   
+  /**
+   * An less-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the less-than comparison.
+   * 
+   * @see std::optional::operator<
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l < r)) -> decltype (*l < r)
@@ -499,6 +793,19 @@ namespace gch
     return (! l.has_value () || (*l < r));
   }
   
+  /**
+   * An less-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than comparison.
+   * 
+   * @see std::optional::operator<
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator< (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l < *r)) -> decltype (l < *r)
@@ -506,6 +813,19 @@ namespace gch
     return (r.has_value () && (l < *r));
   }
   
+  /**
+   * An greater-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the greater-than comparison.
+   * 
+   * @see std::optional::operator>
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l > r)) -> decltype (*l > r)
@@ -513,6 +833,19 @@ namespace gch
     return (l.has_value () && (*l > r));
   }
   
+  /**
+   * An greater-than comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than comparison.
+   * 
+   * @see std::optional::operator>
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator> (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l > *r)) -> decltype (l > *r)
@@ -520,6 +853,19 @@ namespace gch
     return (! r.has_value () || (l > *r));
   }
   
+  /**
+   * An less-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the less-than-equal comparison.
+   * 
+   * @see std::optional::operator<=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l <= r)) -> decltype (*l <= r)
@@ -527,6 +873,19 @@ namespace gch
     return (! l.has_value () || (*l <= r));
   }
   
+  /**
+   * An less-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the less-than-equal comparison.
+   * 
+   * @see std::optional::operator<=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator<= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l <= *r)) -> decltype (l <= *r)
@@ -534,6 +893,19 @@ namespace gch
     return (r.has_value () && (l <= *r));
   }
   
+  /**
+   * An greater-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `l`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l an `optional_ref`.
+   * @param r a comparable lvalue reference.
+   * @return the result of the greater-than-equal comparison.
+   * 
+   * @see std::optional::operator>=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const optional_ref<T>& l, const U& r)
     noexcept (noexcept (*l >= r)) -> decltype (*l >= r)
@@ -541,6 +913,19 @@ namespace gch
     return (l.has_value () && (*l >= r));
   }
   
+  /**
+   * An greater-than-equal comparison function
+   * 
+   * We compare by value, not by address.
+   * 
+   * @tparam T the value type of `r`.
+   * @tparam U a value type which is comparable to T&.
+   * @param l a comparable lvalue reference.
+   * @param r an `optional_ref`.
+   * @return the result of the greater-than-equal comparison.
+   * 
+   * @see std::optional::operator>=
+   */
   template <typename T, typename U> GCH_NODISCARD
   constexpr auto operator>= (const U& l, const optional_ref<T>& r)
     noexcept (noexcept (l >= *r)) -> decltype (l >= *r)
@@ -548,6 +933,15 @@ namespace gch
     return (! r.has_value () || (l >= *r));
   }
   
+  /**
+   * A swap function.
+   * 
+   * Swaps the two `optional_ref`s of the same type.
+   * 
+   * @tparam T the value type pointed to by the `optional_ref`s
+   * @param l an `optional_ref`.
+   * @param r an `optional_ref`.
+   */
   template <typename T>
   GCH_CONSTEXPR_SWAP inline void 
   swap (optional_ref<T>& l, optional_ref<T>& r) noexcept
@@ -555,6 +949,17 @@ namespace gch
     l.swap (r);
   }
   
+  /**
+   * An optional_ref creation function.
+   * 
+   * Creates an `optional_ref` with the specified argument.
+   * 
+   * @tparam T a forwarded type.
+   * @param ref a forwarded value.
+   * @return an `optional_ref` created from the argument.
+   * 
+   * @see std::make_optional
+   */
   template<typename T> GCH_NODISCARD
   GCH_CONSTEXPR_ADDRESSOF inline optional_ref<typename std::remove_reference<T>::type>
   make_optional_ref (T&& ref) noexcept
@@ -563,9 +968,22 @@ namespace gch
   }
 }
 
+/**
+ * A specialization of `std::hash` for `gch::optional_ref`.
+ * 
+ * @tparam T the value type of `gch::optional_ref`.
+ */
 template <typename T>
 struct std::hash<gch::optional_ref<T>>
 {
+  /**
+   * An invokable operator.
+   * 
+   * We just do a noop pointer hash (which is unique).
+   * 
+   * @param opt_ref a reference to a value of type `gch::optional_ref`.
+   * @return a hash of the argument.
+   */
   constexpr std::size_t operator() (const gch::optional_ref<T>& opt_ref) const noexcept
   {
     return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
