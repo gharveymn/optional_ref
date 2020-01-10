@@ -327,7 +327,7 @@ namespace gch
      * 
      * @tparam U a reference type convertible to `reference`.
      * @param ref an lvalue reference.
-     * @return `ref`
+     * @return the argument `ref`.
      */
     template <typename U,
               typename = typename std::enable_if<std::is_constructible<pointer, U *>::value>::type>
