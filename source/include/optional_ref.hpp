@@ -344,7 +344,33 @@ namespace gch
      */
     template <typename U>
     reference emplace (const U&&) = delete;
-
+    
+    /**
+     * Compares reference addresses.
+     * 
+     * Does a pointer comparison between the argument and
+     * the stored reference.
+     * 
+     * @tparam U a reference type convertible to `reference`.
+     * @param ref an lvalue reference.
+     * @return whether `*this` contains `ref`
+     */
+    template <typename U,
+              typename = typename std::enable_if<std::is_constructible<pointer, U *>::value>::type> 
+    GCH_CONSTEXPR_ADDRESSOF bool contains (U& ref)
+    {
+      return static_cast<pointer> (std::addressof (ref)) == m_ptr;
+    }
+    
+    /**
+     * A deleted version for rvalue references.
+     * 
+     * Using `contains` with an rvalue reference is obviously
+     * wrong, so we might as well delete it.
+     */
+    template <typename U>
+    bool contains (const U&&) = delete;
+    
   private:
     
     /**

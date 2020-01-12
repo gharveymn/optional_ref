@@ -102,6 +102,7 @@ void test_throw (void)
 void test_assign (void)
 {
   print_test_header ("test assign");
+  
   int x = 1;
   optional_ref<int> r { x };
   assert (r == 1);
@@ -118,6 +119,7 @@ void test_assign (void)
 void test_nullopt (void)
 {
   print_test_header ("test nullopt");
+  
   optional_ref<int> r0 = nullopt;
   assert (! r0.has_value ());
   
@@ -197,6 +199,7 @@ void test_inheritence (void)
 void test_movement (void)
 {
   print_test_header ("test movement");
+  
   int x = 1;
   int y = 2;
   optional_ref<int> rx { x };
@@ -252,6 +255,7 @@ void test_movement (void)
 void test_comparison (void)
 {
   print_test_header ("test comparison");
+  
   int  x = 11;
   long y = 22;
   optional_ref<int>  rx (x);
@@ -425,17 +429,20 @@ void test_comparison (void)
 void test_make_optional_ref (void)
 {
   print_test_header ("test make_optional_ref");
+  
   int x = 1;
   const int y = 2;
   optional_ref<int> rx = make_optional_ref (x);
   optional_ref<const int> ry = make_optional_ref (y);
   assert (rx != ry);
+  
   print_test_footer ();
 }
 
 void test_hash (void)
 {
   print_test_header ("test hash");
+  
   std::unordered_map<optional_ref<int>, const std::string *> map { };
   int x = 1;
   int y = 2;
@@ -454,6 +461,27 @@ void test_hash (void)
   print_test_footer ();
 }
 
+void test_contains (void)
+{
+  print_test_header ("test contains");
+  
+  int x = 1;
+  int y = 2;
+  
+  optional_ref<int> rx (x);
+  optional_ref<int> ry (y);
+  
+  optional_ref<int> rx1 (x);
+  
+  assert (  rx.contains (x));
+  assert (! rx.contains (y));
+  
+  assert (! rx.contains (*ry));
+  assert (  rx.contains (*rx1));
+  
+  print_test_footer ();
+}
+
 int main (void) 
 {
   test_const ();
@@ -466,5 +494,6 @@ int main (void)
   test_comparison ();
   test_make_optional_ref ();
   test_hash ();
+  test_contains ();
   return 0;
 }
