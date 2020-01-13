@@ -45,6 +45,10 @@
 #  define GCH_CPP14_CONSTEXPR
 #endif
 
+#if __cpp_deduction_guides >= 201703
+#  define GCH_DEDUCTION_GUIDE_SUPPORT
+#endif
+
 namespace gch
 {
   /**
@@ -83,17 +87,19 @@ namespace gch
     static_assert(! std::is_reference<Value>::value, 
       "optional_ref expects a value type as a template argument, not a reference.");
     
-    using value_type = Value;  /*!< The value type of the stored reference */
-    using reference  = Value&; /*!< The reference type to be wrapped */
-    using pointer    = Value*; /*!< The pointer type to the value type */
+    using value_type      = Value;         /*!< The value type of the stored reference */
+    using reference       = Value&;        /*!< The reference type to be wrapped       */
+    using pointer         = Value *;       /*!< The pointer type to the value type     */
+    using const_reference = const Value&;  /*!< A constant reference to `Value`        */
+    using const_pointer   = const Value *; /*!< A constant pointer to `Value`          */
     
   private:
     
     template <typename U>
-    using constructible_from = std::is_constructible<pointer, typename optional_ref<U>::pointer>;
+    using constructible_from = std::is_constructible<pointer, U *>;
   
     template <typename U>
-    using convertible_from = std::is_convertible<typename optional_ref<U>::pointer, pointer>;
+    using convertible_from = std::is_convertible<U *, pointer>;
     
     template <typename>
     struct is_optional_ref : std::false_type { };
@@ -125,7 +131,7 @@ namespace gch
     /**
      * Constructor
      * 
-     * A constructor for the case where `U*` is 
+     * A constructor for the case where `U *` is 
      * implicitly convertible to type `pointer`.
      * 
      * @tparam U a referenced value type.
@@ -133,8 +139,7 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
-              typename std::enable_if<convertible_from<U>::value, bool>::type = true
-             >
+              typename std::enable_if<convertible_from<U>::value, bool>::type = true>
     GCH_CONSTEXPR_ADDRESSOF /* implicit */ optional_ref (U& ref) noexcept
       : m_ptr (std::addressof (ref))
     { }
@@ -150,8 +155,7 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
-              typename std::enable_if<! convertible_from<U>::value, bool>::type = false
-             >
+              typename std::enable_if<! convertible_from<U>::value, bool>::type = false>
     GCH_CONSTEXPR_ADDRESSOF explicit optional_ref (U& ref) noexcept
       : m_ptr (std::addressof (static_cast<reference> (ref)))
     { }
@@ -177,8 +181,7 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
-              typename std::enable_if<convertible_from<U>::value, bool>::type = true
-             >
+              typename std::enable_if<convertible_from<U>::value, bool>::type = true>
     constexpr /* implicit */ optional_ref (const optional_ref<U>& other) noexcept
       : m_ptr (other.get_pointer ())
     { }
@@ -195,10 +198,9 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
-              typename std::enable_if<! convertible_from<U>::value, bool>::type = false
-             >
+              typename std::enable_if<! convertible_from<U>::value, bool>::type = false>
     constexpr explicit optional_ref (const optional_ref<U>& other) noexcept
-        : m_ptr (static_cast<pointer> (other.get_pointer ()))
+      : m_ptr (static_cast<pointer> (other.get_pointer ()))
     { }
   
     /**
@@ -249,9 +251,9 @@ namespace gch
      * 
      * @return whether this `*this` contains a value.
      */
-    GCH_NODISCARD 
+    GCH_NODISCARD
     constexpr bool has_value (void) const noexcept 
-    { 
+    {
       return m_ptr != nullptr; 
     }
     
@@ -264,7 +266,7 @@ namespace gch
      */
     GCH_NODISCARD 
     constexpr explicit operator bool (void) const noexcept 
-    { 
+    {
       return has_value ();
     }
   
@@ -284,20 +286,54 @@ namespace gch
     }
     
     /**
-     * Returns the value, or a specified default if `*this` does not contain a value.
+     * Returns the value, or a default.
+     * 
+     * Returns the value, or a specified default if `*this` does 
+     * not contain a value.
      * 
      * @tparam U a reference type convertible to `reference`.
-     * @param default_value the value returned if `*this` does not contain a value.
-     * @return the stored reference, otherwise `default_value` if `*this` does not contain a value.
+     * @param default_value the value returned if `*this` 
+     *                      does not contain a value.
+     * @return the stored reference, or `default_value` 
+     *         if `*this` does not contain a value.
      */
     template <typename U> GCH_NODISCARD 
-    constexpr reference value_or (U&& default_value) const noexcept
+    constexpr reference value_or (U& default_value) const noexcept
     {
-      static_assert(std::is_convertible<U&&, reference>::value, 
-                    "U&& must be convertible to reference");
-      return has_value () ? *m_ptr 
-                          : static_cast<reference> (std::forward<U> (default_value));
+      return has_value () ? *m_ptr : static_cast<reference> (default_value);
     }
+  
+    /**
+     * Returns the value, or a default.
+     * 
+     * Returns the value, or a specified default 
+     * if `*this` does not contain a value. In this case,
+     * the default is an rvalue reference of type `Value`.
+     * Note that we're using temporary lifetime extension
+     * here, so don't use the return beyond the scope of the
+     * enclosing expression to this function call.
+     * 
+     * @param default_value the value returned if `*this` 
+     *                      does not contain a value.
+     * @return the stored reference, or `default_value` 
+     *         if `*this` does not contain a value.
+     */
+    GCH_NODISCARD
+    constexpr const_reference value_or (const Value&& default_value) const noexcept
+    {
+      return has_value () ? *m_ptr : default_value;
+    }
+  
+    /**
+     * A deleted version for convertible rvalue references.
+     * 
+     * We can't return the converted temporary because
+     * its lifetime isn't extended.
+     */
+    template <typename U,
+              typename = typename std::enable_if<constructible_from<U>::value>::type>
+    GCH_NODISCARD
+    constexpr const_reference value_or (const U&& default_value) const noexcept = delete;
   
     /**
      * Swap the contained reference with that of `other`.
@@ -330,19 +366,20 @@ namespace gch
      * @return the argument `ref`.
      */
     template <typename U,
-              typename = typename std::enable_if<std::is_constructible<pointer, U *>::value>::type>
+              typename = typename std::enable_if<constructible_from<U>::value>::type>
     GCH_CONSTEXPR_ADDRESSOF reference emplace (U& ref) noexcept
     {
       return *(m_ptr = static_cast<pointer> (std::addressof (ref)));
     }
   
     /**
-     * A deleted version for rvalue references.
+     * A deleted version for convertible rvalue references.
      * 
      * We don't want to allow rvalue references because the internal pointer 
      * does not sustain the object lifetime.
      */
-    template <typename U>
+    template <typename U,
+              typename = typename std::enable_if<constructible_from<U>::value>::type>
     reference emplace (const U&&) = delete;
     
     /**
@@ -356,8 +393,8 @@ namespace gch
      * @return whether `*this` contains `ref`
      */
     template <typename U,
-              typename = typename std::enable_if<std::is_constructible<pointer, U *>::value>::type> 
-    GCH_CONSTEXPR_ADDRESSOF bool contains (U& ref)
+              typename = typename std::enable_if<constructible_from<U>::value>::type> 
+    GCH_CONSTEXPR_ADDRESSOF bool contains (U& ref) const noexcept
     {
       return static_cast<pointer> (std::addressof (ref)) == m_ptr;
     }
@@ -366,10 +403,11 @@ namespace gch
      * A deleted version for rvalue references.
      * 
      * Using `contains` with an rvalue reference is obviously
-     * wrong, so we might as well delete it.
+     * incorrectly written, so we might as well delete it.
      */
-    template <typename U>
-    bool contains (const U&&) = delete;
+    template <typename U,
+              typename = typename std::enable_if<constructible_from<U>::value>::type>
+    bool contains (const U&&) const noexcept = delete;
     
   private:
     
@@ -980,18 +1018,25 @@ namespace gch
    * 
    * Creates an `optional_ref` with the specified argument.
    * 
-   * @tparam T a forwarded type.
+   * @tparam U a forwarded type.
    * @param ref a forwarded value.
    * @return an `optional_ref` created from the argument.
    * 
    * @see std::make_optional
    */
-  template<typename T> GCH_NODISCARD
-  GCH_CONSTEXPR_ADDRESSOF inline optional_ref<typename std::remove_reference<T>::type>
-  make_optional_ref (T&& ref) noexcept
+  template <typename U>
+  GCH_NODISCARD
+  GCH_CONSTEXPR_ADDRESSOF optional_ref<typename std::remove_reference<U>::type> 
+  make_optional_ref (U&& ref) noexcept
   {
-    return optional_ref<typename std::remove_reference<T>::type> { std::forward<T>(ref) }; 
+    return optional_ref<typename std::remove_reference<U>::type> { std::forward<U> (ref) };
   }
+
+#ifdef GCH_DEDUCTION_GUIDE_SUPPORT
+  template <typename U>
+  optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
+#endif
+  
 }
 
 /**
@@ -1021,5 +1066,6 @@ struct std::hash<gch::optional_ref<T>>
 #undef GCH_INLINE_VARS
 #undef GCH_CONSTEXPR_SWAP
 #undef GCH_CPP14_CONSTEXPR
+#undef GCH_DEDUCTION_GUIDE_SUPPORT
 
 #endif
