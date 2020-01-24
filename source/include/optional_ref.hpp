@@ -87,19 +87,19 @@ namespace gch
     static_assert(! std::is_reference<Value>::value, 
       "optional_ref expects a value type as a template argument, not a reference.");
     
-    using value_type      = Value;         /*!< The value type of the stored reference */
-    using reference       = Value&;        /*!< The reference type to be wrapped       */
-    using pointer         = Value *;       /*!< The pointer type to the value type     */
-    using const_reference = const Value&;  /*!< A constant reference to `Value`        */
-    using const_pointer   = const Value *; /*!< A constant pointer to `Value`          */
+    using value_type      = Value;        /*!< The value type of the stored reference */
+    using reference       = Value&;       /*!< The reference type to be wrapped       */
+    using pointer         = Value*;       /*!< The pointer type to the value type     */
+    using const_reference = const Value&; /*!< A constant reference to `Value`        */
+    using const_pointer   = const Value*; /*!< A constant pointer to `Value`          */
     
   private:
     
     template <typename U>
-    using constructible_from = std::is_constructible<pointer, U *>;
+    using constructible_from = std::is_constructible<pointer, U*>;
   
     template <typename U>
-    using convertible_from = std::is_convertible<U *, pointer>;
+    using convertible_from = std::is_convertible<U*, pointer>;
     
     template <typename>
     struct is_optional_ref : std::false_type { };
@@ -131,7 +131,7 @@ namespace gch
     /**
      * Constructor
      * 
-     * A constructor for the case where `U *` is 
+     * A constructor for the case where `U*` is 
      * implicitly convertible to type `pointer`.
      * 
      * @tparam U a referenced value type.
@@ -168,6 +168,42 @@ namespace gch
     template <typename U,
               typename = typename std::enable_if<! is_optional_ref<U>::value>::type>
     optional_ref (const U&&) = delete;
+
+    /**
+     * Constructor
+     *
+     * A converting constructor for types implicitly
+     * convertible to `pointer`. This is so we don't
+     * need to dereference or inspect pointers before
+     * creation; we can just use the pointer directly.
+     *
+     * @tparam U a type implicitly convertible to `pointer`.
+     * @param ptr a pointer.
+     */
+    template <typename U,
+      typename = typename std::enable_if<std::is_constructible<pointer, U&&>::value>::type,
+      typename std::enable_if<std::is_convertible<U&&, pointer>::value, bool>::type = true>
+    constexpr /* implicit */ optional_ref (U&& ptr) noexcept
+      : m_ptr (ptr)
+    { }
+
+    /**
+     * Constructor
+     *
+     * A converting constructor for types explicitly
+     * convertible to `pointer`. This is so we don't
+     * need to dereference or inspect pointers before
+     * creation; we can just use the pointer directly.
+     *
+     * @tparam U a type explicitly convertible to `pointer`.
+     * @param ptr a pointer.
+     */
+    template <typename U,
+      typename = typename std::enable_if<std::is_constructible<pointer, U&&>::value>::type,
+      typename std::enable_if<! std::is_convertible<U&&, pointer>::value, bool>::type = false>
+    constexpr explicit optional_ref (U&& ptr) noexcept
+      : m_ptr (static_cast<pointer> (ptr))
+    { }
   
     /**
      * Constructor
@@ -306,12 +342,12 @@ namespace gch
     /**
      * Returns the value, or a default.
      * 
-     * Returns the value, or a specified default 
-     * if `*this` does not contain a value. In this case,
-     * the default is an rvalue reference of type `Value`.
-     * Note that we're using temporary lifetime extension
-     * here, so don't use the return beyond the scope of the
-     * enclosing expression to this function call.
+     * Returns the value, or a specified default if `*this`
+     * does not contain a value. In this case, the default
+     * is an rvalue reference of type `Value`. Note that
+     * we're using temporary lifetime extension here, so
+     * don't use the return beyond the scope of the enclosing
+     * expression to this function call.
      * 
      * @param default_value the value returned if `*this` 
      *                      does not contain a value.
