@@ -1,4 +1,4 @@
-#include <optional_ref.hpp>
+#include "optional_ref.hpp"
 
 #include <iostream>
 #include <cassert>
@@ -77,6 +77,7 @@ static_assert (std::is_trivially_move_constructible<optional_ref<int>>::value, "
 static_assert (std::is_trivially_copy_assignable<optional_ref<int>>::value, "");
 static_assert (std::is_trivially_move_assignable<optional_ref<int>>::value, "");
 static_assert (std::is_trivially_destructible<optional_ref<int>>::value, "");
+static_assert (std::is_trivially_copyable<optional_ref<int>>::value, "");
 
 static constexpr int g_x = 0;
 
@@ -116,18 +117,18 @@ void test_const (void)
   rz = z;
   
   assert (rx == rz);
-  assert (rx.operator-> () != rz.operator-> ());
+  assert (rx.get_pointer () != rz.get_pointer ());
   
   // set rz with a non-const reference
   rz = y;
   
   assert (rx != rz);
-  assert (rx.operator-> () != rz.operator-> ());
+  assert (rx.get_pointer () != rz.get_pointer ());
   
   rz = x;
   
   assert (rx == rz);
-  assert (rx.operator-> () == rz.operator-> ());
+  assert (rx.get_pointer () == rz.get_pointer ());
   
   print_test_footer ();
 }
@@ -252,12 +253,12 @@ void test_inheritence (void)
   const optional_ref<my_struct> r1 (s1);
   
   assert (r0 != r1);
-  assert (r0.operator-> () != r1.operator-> ());
+  assert (r0.get_pointer () != r1.get_pointer ());
   
   const optional_ref<my_struct_base> r2 (r1);
   
   assert (r2 == r1);
-  assert (r2.operator-> () == r1.operator-> ());
+  assert (r2.get_pointer () == r1.get_pointer ());
   
   print_test_footer ();
 }
@@ -281,29 +282,29 @@ void test_movement (void)
   optional_ref<int> rz { rx };
   assert (rz == rx);
   assert (rz != ry);
-  assert (rz.operator-> () == rx.operator-> ());
-  assert (rz.operator-> () != ry.operator-> ());
+  assert (rz.get_pointer () == rx.get_pointer ());
+  assert (rz.get_pointer () != ry.get_pointer ());
   
   // move constructor
   optional_ref<int> rm { std::move (rz) };
   assert (rm == rx);
   assert (rm != ry);
-  assert (rm.operator-> () == rx.operator-> ());
-  assert (rm.operator-> () != ry.operator-> ());
+  assert (rm.get_pointer () == rx.get_pointer ());
+  assert (rm.get_pointer () != ry.get_pointer ());
   
   // copy assignment operator
   rz = ry;
   assert (rz != rx);
   assert (rz == ry);
-  assert (rz.operator-> () != rx.operator-> ());
-  assert (rz.operator-> () == ry.operator-> ());
+  assert (rz.get_pointer () != rx.get_pointer ());
+  assert (rz.get_pointer () == ry.get_pointer ());
   
   // move assignment operator
   rm = std::move (rz);
   assert (rm != rx);
   assert (rm == ry);
-  assert (rm.operator-> () != rx.operator-> ());
-  assert (rm.operator-> () == ry.operator-> ());
+  assert (rm.get_pointer () != rx.get_pointer ());
+  assert (rm.get_pointer () == ry.get_pointer ());
   
   // creation using a temporary
   const optional_ref<int> rt { optional_ref<int> (x) };
@@ -605,6 +606,9 @@ double test_perf_equality_worker (void)
 
 void test_perf_equality (void)
 {
+  print_test_header ("test perf equality");
+  std::cout << std::endl;
+  
   constexpr auto num_tests = 10;
   std::vector<double> times (num_tests);
   std::generate (times.begin (), times.end (), test_perf_equality_worker);
@@ -620,6 +624,48 @@ void test_perf_equality (void)
   
   std::cout << "  mean: " << mean << std::endl;
   std::cout << "stddev: " << stddev << std::endl;
+  
+  print_test_footer ();
+}
+
+void test_pointer_cast (void)
+{
+  print_test_header ("test pointer cast");
+
+  int  x     = 1;
+  int* x_ptr = &x;
+  int* n_ptr = nullptr;
+
+  const optional_ref<int> opt_x = x_ptr;
+  assert (opt_x.has_value ());
+  assert (opt_x.contains (x));
+
+  const optional_ref<int> opt_n = n_ptr;
+  assert (! opt_n.has_value ());
+
+  /* implicitly convertible */
+  struct imp_conv
+  {
+    /* implicit */ operator int* (void) noexcept { return m_ptr; }
+    int* m_ptr;
+  } imp { &x };
+
+  const optional_ref<int> opt_y = imp;
+  assert (opt_y.has_value ());
+  assert (opt_y.contains (x));
+
+  /* explicitly convertible */
+  struct exp_conv
+  {
+    explicit operator int* (void) noexcept { return m_ptr; }
+    int* m_ptr;
+  } exp { &x };
+
+  const optional_ref<int> opt_z = optional_ref<int> { exp };
+  assert (opt_z.has_value ());
+  assert (opt_z.contains (x));
+
+  print_test_footer ();
 }
 
 int main (void) 
@@ -639,5 +685,6 @@ int main (void)
   test_contains ();
   test_deduction ();
   test_perf_equality ();
+  test_pointer_cast ();
   return 0;
 }
