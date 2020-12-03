@@ -3,6 +3,10 @@
 #include <iostream>
 #include <cassert>
 #include <unordered_map>
+#include <optional>
+#include <chrono>
+#include <random>
+#include <algorithm>
 
 using namespace gch;
 
@@ -569,8 +573,58 @@ void test_deduction (void)
 #endif
 }
 
+double test_perf_equality_worker (void)
+{
+  using namespace std::chrono;
+  using clock = high_resolution_clock;
+  using time = clock::time_point;
+  time t1 = clock::now ();
+  
+  constexpr auto v_sz = 100;
+  constexpr auto num  = 10000000;
+  
+  std::vector<double> v (v_sz);
+  std::generate (v.begin (), v.end (), rand);
+  
+  std::random_device rd;
+  std::mt19937 gen (rd ());
+  std::uniform_int_distribution<std::size_t> dist (0, v_sz - 1);
+  
+  optional_ref<double> l;
+  optional_ref<double> r;
+  for (auto i = 0; i < num; ++i)
+  {
+    l = v[dist (gen)];
+    r = v[dist (gen)];
+    static_cast<void> (l == r);
+  }
+  
+  time t2 = clock::now ();
+  return duration_cast<duration<double>> (t2 - t1).count ();
+}
+
+void test_perf_equality (void)
+{
+  constexpr auto num_tests = 10;
+  std::vector<double> times (num_tests);
+  std::generate (times.begin (), times.end (), test_perf_equality_worker);
+  auto mean = std::accumulate (times.begin (), times.end (), 0.0) / num_tests;
+  
+  auto variance = std::accumulate (times.begin (), times.end (), 0.0,
+    [&mean, &num_tests] (auto accum, const auto& val)
+    {
+      return accum + (std::pow (val - mean, 2.0) / (num_tests - 1));
+    });
+  
+  auto stddev = std::sqrt (variance);
+  
+  std::cout << "  mean: " << mean << std::endl;
+  std::cout << "stddev: " << stddev << std::endl;
+}
+
 int main (void) 
 {
+  std::tuple<int> x;
   static_cast<void> (g_rx);  
   test_const ();
   test_arrow ();
@@ -584,5 +638,6 @@ int main (void)
   test_hash ();
   test_contains ();
   test_deduction ();
+  test_perf_equality ();
   return 0;
 }
