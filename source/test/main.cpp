@@ -615,7 +615,7 @@ void test_perf_equality (void)
   auto mean = std::accumulate (times.begin (), times.end (), 0.0) / num_tests;
   
   auto variance = std::accumulate (times.begin (), times.end (), 0.0,
-    [&mean, &num_tests] (auto accum, const auto& val)
+    [&mean, &num_tests] (double accum, double val)
     {
       return accum + (std::pow (val - mean, 2.0) / (num_tests - 1));
     });

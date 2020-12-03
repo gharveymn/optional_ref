@@ -16,7 +16,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 endif()
 
 SET_TARGET_PROPERTIES(test_optional_ref PROPERTIES
-                      CXX_STANDARD          17
+                      CXX_STANDARD          11
                       CXX_STANDARD_REQUIRED NO
                       CXX_EXTENSIONS        NO
                       COMPILE_OPTIONS       "${COMPILE_OPTS}"
