@@ -11,7 +11,7 @@
 #define OPTIONAL_REF_HPP
 
 #include <type_traits>
-#include <typeindex>
+#include <functional>
 #include <utility>
 
 #ifndef GCH_CPP14_CONSTEXPR
@@ -70,6 +70,7 @@
 
 namespace gch
 {
+  
   /**
    * A struct that provides semantics for
    * empty `optional_ref`s.
@@ -1091,29 +1092,36 @@ namespace gch
   template <typename U>
   optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
 #endif
+
+}
+
+namespace std
+{
+  
+  /**
+   * A specialization of `std::hash` for `gch::optional_ref`.
+   *
+   * @tparam T the value type of `gch::optional_ref`.
+   */
+  template <typename T>
+  struct hash<gch::optional_ref<T>>
+  {
+    /**
+     * An invokable operator.
+     *
+     * We just do a noop pointer hash (which is unique).
+     *
+     * @param opt_ref a reference to a value of type `gch::optional_ref`.
+     * @return a hash of the argument.
+     */
+    std::size_t operator() (const gch::optional_ref<T>& opt_ref) const noexcept
+    {
+      return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
+    }
+  };
   
 }
 
-/**
- * A specialization of `std::hash` for `gch::optional_ref`.
- * 
- * @tparam T the value type of `gch::optional_ref`.
- */
-template <typename T>
-struct std::hash<gch::optional_ref<T>>
-{
-  /**
-   * An invokable operator.
-   * 
-   * We just do a noop pointer hash (which is unique).
-   * 
-   * @param opt_ref a reference to a value of type `gch::optional_ref`.
-   * @return a hash of the argument.
-   */
-  constexpr std::size_t operator() (const gch::optional_ref<T>& opt_ref) const noexcept
-  {
-    return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
-  }
-};
+
 
 #endif
