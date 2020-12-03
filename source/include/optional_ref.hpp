@@ -422,7 +422,7 @@ namespace gch
   };
   
   /**
-   * An equality comparison function
+   * An equality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -435,14 +435,14 @@ namespace gch
    * @see std::optional::operator==
    */
   template <typename T, typename U> GCH_NODISCARD
-  constexpr auto operator== (const optional_ref<T>& l, const optional_ref<U>& r) 
+  constexpr auto operator== (const optional_ref<T>& l, const optional_ref<U>& r)
     noexcept (noexcept (*l == *r)) -> decltype (*l == *r)
   {
     return (l.has_value () == r.has_value ()) && (! l.has_value () || (*l == *r));
   }
   
   /**
-   * An inequality comparison function
+   * An inequality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -462,7 +462,7 @@ namespace gch
   }
   
   /**
-   * An less-than comparison function
+   * An less-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -482,7 +482,7 @@ namespace gch
   }
   
   /**
-   * An greater-than comparison function
+   * A greater-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -502,7 +502,7 @@ namespace gch
   }
   
   /**
-   * An less-than-equal comparison function
+   * A less-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -522,7 +522,7 @@ namespace gch
   }
   
   /**
-   * An greater-than-equal comparison function
+   * A greater-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -542,7 +542,7 @@ namespace gch
   }
   
   /**
-   * An equality comparison function
+   * An equality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -560,7 +560,7 @@ namespace gch
   }
   
   /**
-   * An equality comparison function
+   * An equality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -578,7 +578,7 @@ namespace gch
   }
   
   /**
-   * An inequality comparison function
+   * An inequality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -596,7 +596,7 @@ namespace gch
   }
   
   /**
-   * An inequality comparison function
+   * An inequality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -614,7 +614,7 @@ namespace gch
   }
   
   /**
-   * An less-than comparison function
+   * A less-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -632,7 +632,7 @@ namespace gch
   }
   
   /**
-   * An less-than comparison function
+   * A less-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -650,7 +650,7 @@ namespace gch
   }
   
   /**
-   * An greater-than comparison function
+   * A greater-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -668,7 +668,7 @@ namespace gch
   }
   
   /**
-   * An greater-than comparison function
+   * A greater-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -686,7 +686,7 @@ namespace gch
   }
   
   /**
-   * An less-than-equal comparison function
+   * A less-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -704,7 +704,7 @@ namespace gch
   }
   
   /**
-   * An less-than-equal comparison function
+   * A less-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -722,7 +722,7 @@ namespace gch
   }
   
   /**
-   * An greater-than-equal comparison function
+   * A greater-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -740,7 +740,7 @@ namespace gch
   }
   
   /**
-   * An greater-than-equal comparison function
+   * A greater-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -758,7 +758,7 @@ namespace gch
   }
   
   /**
-   * An equality comparison function
+   * An equality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -778,7 +778,7 @@ namespace gch
   }
   
   /**
-   * An equality comparison function
+   * An equality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -798,7 +798,7 @@ namespace gch
   }
   
   /**
-   * An inequality comparison function
+   * An inequality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -818,7 +818,7 @@ namespace gch
   }
   
   /**
-   * An inequality comparison function
+   * An inequality comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -838,7 +838,7 @@ namespace gch
   }
   
   /**
-   * An less-than comparison function
+   * A less-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -858,7 +858,7 @@ namespace gch
   }
   
   /**
-   * An less-than comparison function
+   * A less-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -878,7 +878,7 @@ namespace gch
   }
   
   /**
-   * An greater-than comparison function
+   * A greater-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -898,7 +898,7 @@ namespace gch
   }
   
   /**
-   * An greater-than comparison function
+   * A greater-than comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -918,7 +918,7 @@ namespace gch
   }
   
   /**
-   * An less-than-equal comparison function
+   * A less-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -938,7 +938,7 @@ namespace gch
   }
   
   /**
-   * An less-than-equal comparison function
+   * A less-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -958,7 +958,7 @@ namespace gch
   }
   
   /**
-   * An greater-than-equal comparison function
+   * A greater-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
@@ -978,7 +978,7 @@ namespace gch
   }
   
   /**
-   * An greater-than-equal comparison function
+   * A greater-than-equal comparison function.
    * 
    * We compare by value, not by address.
    * 
