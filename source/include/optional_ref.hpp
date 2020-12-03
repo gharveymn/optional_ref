@@ -10,43 +10,62 @@
 #ifndef OPTIONAL_REF_HPP
 #define OPTIONAL_REF_HPP
 
-#include <memory>
 #include <type_traits>
 #include <typeindex>
 #include <utility>
 
-#if __has_cpp_attribute(nodiscard) >= 201603L
-#  define GCH_NODISCARD [[nodiscard]]
-#else
-#  define GCH_NODISCARD
+#ifndef GCH_CPP14_CONSTEXPR
+#  if __cpp_constexpr >= 201304L
+#    define GCH_CPP14_CONSTEXPR constexpr
+#  else
+#    define GCH_CPP14_CONSTEXPR
+#  endif
 #endif
 
-#if __cpp_lib_addressof_constexpr >= 201603L
-#  define GCH_CONSTEXPR_ADDRESSOF constexpr
-#else
-#  define GCH_CONSTEXPR_ADDRESSOF
+#ifndef GCH_CPP17_CONSTEXPR
+#  if __cpp_constexpr >= 201603L
+#    define GCH_CPP17_CONSTEXPR constexpr
+#  else
+#    define GCH_CPP17_CONSTEXPR
+#  endif
 #endif
 
-#if __cpp_inline_variables >= 201606
-#  define GCH_INLINE_VARS inline
-#else
-#  define GCH_INLINE_VARS
+#ifndef GCH_CPP20_CONSTEXPR
+#  if __cpp_constexpr >= 201907L
+#    define GCH_CPP20_CONSTEXPR constexpr
+#  else
+#    define GCH_CPP20_CONSTEXPR
+#  endif
 #endif
 
-#if __cpp_lib_constexpr_algorithms >= 201806L
-#  define GCH_CONSTEXPR_SWAP constexpr
-#else
-#  define GCH_CONSTEXPR_SWAP
+#ifndef GCH_NODISCARD
+#  if __has_cpp_attribute(nodiscard) >= 201603L
+#    define GCH_NODISCARD [[nodiscard]]
+#  else
+#    define GCH_NODISCARD
+#  endif
 #endif
 
-#if __cpp_constexpr >= 201304L
-#  define GCH_CPP14_CONSTEXPR constexpr
-#else 
-#  define GCH_CPP14_CONSTEXPR
+#ifndef GCH_INLINE_VARS
+#  if __cpp_inline_variables >= 201606
+#    define GCH_INLINE_VARS inline
+#  else
+#    define GCH_INLINE_VARS
+#  endif
 #endif
 
-#if __cpp_deduction_guides >= 201703
-#  define GCH_DEDUCTION_GUIDE_SUPPORT
+#ifndef GCH_CONSTEXPR_SWAP
+#  if __cpp_lib_constexpr_algorithms >= 201806L
+#    define GCH_CONSTEXPR_SWAP constexpr
+#  else
+#    define GCH_CONSTEXPR_SWAP
+#  endif
+#endif
+
+#ifndef GCH_CTAD_SUPPORT
+#  if __cpp_deduction_guides >= 201703
+#    define GCH_CTAD_SUPPORT
+#  endif
 #endif
 
 namespace gch
@@ -140,8 +159,8 @@ namespace gch
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
               typename std::enable_if<convertible_from<U>::value, bool>::type = true>
-    GCH_CONSTEXPR_ADDRESSOF /* implicit */ optional_ref (U& ref) noexcept
-      : m_ptr (std::addressof (ref))
+    constexpr /* implicit */ optional_ref (U& ref) noexcept
+      : m_ptr (&ref)
     { }
   
     /**
@@ -156,8 +175,8 @@ namespace gch
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type,
               typename std::enable_if<! convertible_from<U>::value, bool>::type = false>
-    GCH_CONSTEXPR_ADDRESSOF explicit optional_ref (U& ref) noexcept
-      : m_ptr (std::addressof (static_cast<reference> (ref)))
+    constexpr explicit optional_ref (U& ref) noexcept
+      : m_ptr (&static_cast<reference> (ref))
     { }
   
     /**
@@ -403,9 +422,9 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type>
-    GCH_CONSTEXPR_ADDRESSOF reference emplace (U& ref) noexcept
+    GCH_CPP14_CONSTEXPR reference emplace (U& ref) noexcept
     {
-      return *(m_ptr = static_cast<pointer> (std::addressof (ref)));
+      return *(m_ptr = static_cast<pointer> (&ref));
     }
   
     /**
@@ -430,9 +449,9 @@ namespace gch
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from<U>::value>::type> 
-    GCH_CONSTEXPR_ADDRESSOF bool contains (U& ref) const noexcept
+    constexpr bool contains (U& ref) const noexcept
     {
-      return static_cast<pointer> (std::addressof (ref)) == m_ptr;
+      return static_cast<pointer> (&ref) == m_ptr;
     }
     
     /**
@@ -1062,13 +1081,13 @@ namespace gch
    */
   template <typename U>
   GCH_NODISCARD
-  GCH_CONSTEXPR_ADDRESSOF optional_ref<typename std::remove_reference<U>::type> 
+  constexpr optional_ref<typename std::remove_reference<U>::type>
   make_optional_ref (U&& ref) noexcept
   {
     return optional_ref<typename std::remove_reference<U>::type> { std::forward<U> (ref) };
   }
 
-#ifdef GCH_DEDUCTION_GUIDE_SUPPORT
+#ifdef GCH_CTAD_SUPPORT
   template <typename U>
   optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
 #endif
@@ -1096,12 +1115,5 @@ struct std::hash<gch::optional_ref<T>>
     return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
   }
 };
-
-#undef GCH_NODISCARD
-#undef GCH_CONSTEXPR_ADDRESSOF
-#undef GCH_INLINE_VARS
-#undef GCH_CONSTEXPR_SWAP
-#undef GCH_CPP14_CONSTEXPR
-#undef GCH_DEDUCTION_GUIDE_SUPPORT
 
 #endif
