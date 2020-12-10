@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 PROJECT(optional_ref
-        VERSION 0.0.2
+        VERSION 0.0.3
         LANGUAGES CXX)
 
 # Options
