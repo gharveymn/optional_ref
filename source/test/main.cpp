@@ -39,14 +39,20 @@ template bool gch::optional_ref<base>::contains (const derived&&) const;
 
 #endif
 
-template bool gch::operator== (const optional_ref<int>&, const optional_ref<long>&) noexcept;
-template bool gch::operator!= (const optional_ref<int>&, const optional_ref<long>&) noexcept;
-template bool gch::operator<  (const optional_ref<int>&, const optional_ref<long>&) noexcept;
-template bool gch::operator>  (const optional_ref<int>&, const optional_ref<long>&) noexcept;
-template bool gch::operator<= (const optional_ref<int>&, const optional_ref<long>&) noexcept;
-template bool gch::operator>= (const optional_ref<int>&, const optional_ref<long>&) noexcept;
+template bool gch::operator== (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator!= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator<  (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator>  (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator<= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator>= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+#ifdef GCH_THREE_WAY_COMPARISON
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+#endif
 
 template bool gch::operator== (const optional_ref<int>&, nullopt_t               ) noexcept;
+#ifdef GCH_THREE_WAY_COMPARISON
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, nullopt_t) noexcept;
+#else
 template bool gch::operator== (nullopt_t,                const optional_ref<int>&) noexcept;
 template bool gch::operator!= (const optional_ref<int>&, nullopt_t               ) noexcept;
 template bool gch::operator!= (nullopt_t,                const optional_ref<int>&) noexcept;
@@ -58,19 +64,40 @@ template bool gch::operator<= (const optional_ref<int>&, nullopt_t              
 template bool gch::operator<= (nullopt_t,                const optional_ref<int>&) noexcept;
 template bool gch::operator>= (const optional_ref<int>&, nullopt_t               ) noexcept;
 template bool gch::operator>= (nullopt_t,                const optional_ref<int>&) noexcept;
+#endif
 
-template bool gch::operator== (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator== (const long&,                const optional_ref<int>&) noexcept;
-template bool gch::operator!= (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator!= (const long&,                const optional_ref<int>&) noexcept;
-template bool gch::operator<  (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator<  (const long&,                const optional_ref<int>&) noexcept;
-template bool gch::operator>  (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator>  (const long&,                const optional_ref<int>&) noexcept;
-template bool gch::operator<= (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator<= (const long&,                const optional_ref<int>&) noexcept;
-template bool gch::operator>= (const optional_ref<int>&, const long&               ) noexcept;
-template bool gch::operator>= (const long&,                const optional_ref<int>&) noexcept;
+template bool gch::operator== (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+#ifdef GCH_THREE_WAY_COMPARISON
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, std::nullptr_t) noexcept;
+#else
+template bool gch::operator== (std::nullptr_t,           const optional_ref<int>&) noexcept;
+template bool gch::operator!= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+template bool gch::operator!= (std::nullptr_t,           const optional_ref<int>&) noexcept;
+template bool gch::operator<  (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+template bool gch::operator<  (std::nullptr_t,           const optional_ref<int>&) noexcept;
+template bool gch::operator>  (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+template bool gch::operator>  (std::nullptr_t,           const optional_ref<int>&) noexcept;
+template bool gch::operator<= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+template bool gch::operator<= (std::nullptr_t,           const optional_ref<int>&) noexcept;
+template bool gch::operator>= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
+template bool gch::operator>= (std::nullptr_t,           const optional_ref<int>&) noexcept;
+#endif
+
+template bool gch::operator== (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator== (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator!= (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator!= (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator<  (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator<  (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator>  (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator>  (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator<= (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator<= (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator>= (const optional_ref<int>&, const int *             ) noexcept;
+template bool gch::operator>= (const int *,              const optional_ref<int>&) noexcept;
+#ifdef GCH_THREE_WAY_COMPARISON
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const int *) noexcept;
+#endif
 
 static_assert (std::is_trivially_copy_constructible<optional_ref<int>>::value, "");
 static_assert (std::is_trivially_move_constructible<optional_ref<int>>::value, "");
@@ -116,7 +143,7 @@ void test_const (void)
   // set rz
   rz = z;
   
-  assert (rx == rz);
+  assert (rx != rz);
   assert (rx.get_pointer () != rz.get_pointer ());
   
   // set rz with a non-const reference
@@ -170,13 +197,13 @@ void test_assign (void)
   
   int x = 1;
   optional_ref<int> r { x };
-  assert (r == 1);
+  assert (r == &x);
   *r = 2;
-  assert (r == 2);
+  assert (r == &x);
   
   int y = 3;
   assert (r.emplace (y) == 3);
-  assert (r == 3);
+  assert (r == &y);
   
   print_test_footer ();
 }
@@ -273,10 +300,6 @@ void test_movement (void)
   const optional_ref<int> ry { y };
   assert (! (rx == ry));
   assert (  (rx != ry));
-  assert (  (rx <  ry));
-  assert (  (ry >  rx));
-  assert (  (rx <= ry));
-  assert (  (ry >= rx));
   
   // copy constructor
   optional_ref<int> rz { rx };
@@ -307,9 +330,9 @@ void test_movement (void)
   assert (rm.get_pointer () == ry.get_pointer ());
   
   // creation using a temporary
-  const optional_ref<int> rt { optional_ref<int> (x) };
-  assert (rt == x);
-  assert (rt != y);
+  const optional_ref<int> rt { optional_ref<int> { x } };
+  assert (rt == &x);
+  assert (rt != &y);
   
   // swap
   
@@ -321,10 +344,6 @@ void test_movement (void)
   
   assert (! (rp == rq));
   assert (  (rp != rq));
-  assert (! (rp <  rq));
-  assert (! (rq >  rp));
-  assert (! (rp <= rq));
-  assert (! (rq >= rp));
   
   print_test_footer ();
 }
@@ -332,13 +351,11 @@ void test_movement (void)
 void test_comparison (void)
 {
   print_test_header ("test comparison");
+  int a[2] = { 11, 22 };
+  const optional_ref<int> rx (a[0]);
+  const optional_ref<int> ry (a[1]);
   
-  int  x = 11;
-  long y = 22;
-  const optional_ref<int>  rx (x);
-  const optional_ref<long> ry (y);
-  
-  // disparate type comparisons (not equal)
+  // not equal
   assert (! (rx == ry));
   assert (! (ry == rx));
   assert (  (rx != ry));
@@ -352,22 +369,22 @@ void test_comparison (void)
   assert (! (rx >= ry));
   assert (  (ry >= rx));
   
-  // disparate type comparisons (equal)
+  // set value to be equal (should still not be equal in comparison)
   *ry = 11;
-  assert (  (rx == ry));
-  assert (  (ry == rx));
-  assert (! (rx != ry));
-  assert (! (ry != rx));
-  assert (! (rx <  ry));
+  assert (! (rx == ry));
+  assert (! (ry == rx));
+  assert (  (rx != ry));
+  assert (  (ry != rx));
+  assert (  (rx <  ry));
   assert (! (ry <  rx));
   assert (! (rx >  ry));
-  assert (! (ry >  rx));
+  assert (  (ry >  rx));
   assert (  (rx <= ry));
-  assert (  (ry <= rx));
-  assert (  (rx >= ry));
+  assert (! (ry <= rx));
+  assert (! (rx >= ry));
   assert (  (ry >= rx));
   
-  // nullopt comparisons
+  // nullopt comparisons (rz is not nullopt)
   const optional_ref<int> rz (rx);
   assert (! (rz      == nullopt));
   assert (! (nullopt == rz     ));
@@ -381,6 +398,19 @@ void test_comparison (void)
   assert (  (nullopt <= rz     ));
   assert (  (rz      >= nullopt));
   assert (! (nullopt >= rz     ));
+  
+  assert (! (rz      == nullptr));
+  assert (! (nullptr == rz     ));
+  assert (  (rz      != nullptr));
+  assert (  (nullptr != rz     ));
+  assert (! (rz      <  nullptr));
+  assert (  (nullptr <  rz     ));
+  assert (  (rz      >  nullptr));
+  assert (! (nullptr >  rz     ));
+  assert (! (rz      <= nullptr));
+  assert (  (nullptr <= rz     ));
+  assert (  (rz      >= nullptr));
+  assert (! (nullptr >= rz     ));
   
   // set nullopt
   const optional_ref<int> rn (nullopt);
@@ -399,7 +429,7 @@ void test_comparison (void)
   assert (  (rx >= rn));
   assert (! (rn >= rx));
   
-  // rz is still nullopt
+  // rn is still nullopt
   assert (  (rn      == nullopt));
   assert (  (nullopt == rn     ));
   assert (! (rn      != nullopt));
@@ -413,80 +443,21 @@ void test_comparison (void)
   assert (  (rn      >= nullopt));
   assert (  (nullopt >= rn     ));
   
-  // compare with a value of different type (not equal)
-  const long vy = 22;
-  assert (! (rx == vy));
-  assert (! (vy == rx));
-  assert (  (rx != vy));
-  assert (  (vy != rx));
-  assert (  (rx <  vy));
-  assert (! (vy <  rx));
-  assert (! (rx >  vy));
-  assert (  (vy >  rx));
-  assert (  (rx <= vy));
-  assert (! (vy <= rx));
-  assert (! (rx >= vy));
-  assert (  (vy >= rx));
-  
-  // compare with a value of different type (equal)
-  const long vx = 11;
-  assert (  (rx == vx));
-  assert (  (vx == rx));
-  assert (! (rx != vx));
-  assert (! (vx != rx));
-  assert (! (rx <  vx));
-  assert (! (vx <  rx));
-  assert (! (rx >  vx));
-  assert (! (vx >  rx));
-  assert (  (rx <= vx));
-  assert (  (vx <= rx));
-  assert (  (rx >= vx));
-  assert (  (vx >= rx));
-  
-  // compare with rvalue reference (not equal)
-  assert (! (rx == 22));
-  assert (! (22 == rx));
-  assert (  (rx != 22));
-  assert (  (22 != rx));
-  assert (  (rx <  22));
-  assert (! (22 <  rx));
-  assert (! (rx >  22));
-  assert (  (22 >  rx));
-  assert (  (rx <= 22));
-  assert (! (22 <= rx));
-  assert (! (rx >= 22));
-  assert (  (22 >= rx));
-  
-  // compare with rvalue reference (equal)
-  assert (  (rx == 11));
-  assert (  (11 == rx));
-  assert (! (rx != 11));
-  assert (! (11 != rx));
-  assert (! (rx <  11));
-  assert (! (11 <  rx));
-  assert (! (rx >  11));
-  assert (! (11 >  rx));
-  assert (  (rx <= 11));
-  assert (  (11 <= rx));
-  assert (  (rx >= 11));
-  assert (  (11 >= rx));
-  
-  // compare value with optional_ref which is nullopt
-  assert (! (rn == vy));
-  assert (! (vy == rn));
-  assert (  (rn != vy));
-  assert (  (vy != rn));
-  assert (  (rn <  vy));
-  assert (! (vy <  rn));
-  assert (! (rn >  vy));
-  assert (  (vy >  rn));
-  assert (  (rn <= vy));
-  assert (! (vy <= rn));
-  assert (! (rn >= vy));
-  assert (  (vy >= rn));
+  assert (  (rn      == nullptr));
+  assert (  (nullptr == rn     ));
+  assert (! (rn      != nullptr));
+  assert (! (nullptr != rn     ));
+  assert (! (rn      <  nullptr));
+  assert (! (nullptr <  rn     ));
+  assert (! (rn      >  nullptr));
+  assert (! (nullptr >  rn     ));
+  assert (  (rn      <= nullptr));
+  assert (  (nullptr <= rn     ));
+  assert (  (rn      >= nullptr));
+  assert (  (nullptr >= rn     ));
   
   // compare two optional_refs which are both nullopt
-  const optional_ref<long> rm (nullopt);
+  const optional_ref<int> rm (nullopt);
   assert (  (rn == rm));
   assert (  (rm == rn));
   assert (! (rn != rm));
@@ -499,6 +470,50 @@ void test_comparison (void)
   assert (  (rm <= rn));
   assert (  (rn >= rm));
   assert (  (rm >= rn));
+  
+  // compare with a pointer (not equal)
+  int *py = &a[1];
+  assert (! (rx == py));
+  assert (! (py == rx));
+  assert (  (rx != py));
+  assert (  (py != rx));
+  assert (  (rx <  py));
+  assert (! (py <  rx));
+  assert (! (rx >  py));
+  assert (  (py >  rx));
+  assert (  (rx <= py));
+  assert (! (py <= rx));
+  assert (! (rx >= py));
+  assert (  (py >= rx));
+  
+  // compare with a pointer (equal)
+  int *px = &a[0];
+  assert (  (rx == px));
+  assert (  (px == rx));
+  assert (! (rx != px));
+  assert (! (px != rx));
+  assert (! (rx <  px));
+  assert (! (px <  rx));
+  assert (! (rx >  px));
+  assert (! (px >  rx));
+  assert (  (rx <= px));
+  assert (  (px <= rx));
+  assert (  (rx >= px));
+  assert (  (px >= rx));
+  
+  // compare pointer with optional_ref which is nullopt
+  assert (! (rn == py));
+  assert (! (py == rn));
+  assert (  (rn != py));
+  assert (  (py != rn));
+  assert (  (rn <  py));
+  assert (! (py <  rn));
+  assert (! (rn >  py));
+  assert (  (py >  rn));
+  assert (  (rn <= py));
+  assert (! (py <= rn));
+  assert (! (rn >= py));
+  assert (  (py >= rn));
   
   print_test_footer ();
 }
@@ -598,6 +613,11 @@ double test_perf_equality_worker (void)
     l = v[dist (gen)];
     r = v[dist (gen)];
     static_cast<void> (l == r);
+    static_cast<void> (l != r);
+    static_cast<void> (l <  r);
+    static_cast<void> (l <= r);
+    static_cast<void> (l >  r);
+    static_cast<void> (l >= r);
   }
   
   time t2 = clock::now ();
@@ -670,6 +690,7 @@ void test_pointer_cast (void)
 
 int main (void) 
 {
+  optional_ref<int> y (nullptr);
   std::tuple<int> x;
   static_cast<void> (g_rx);  
   test_const ();
