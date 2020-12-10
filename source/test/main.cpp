@@ -3,10 +3,10 @@
 #include <iostream>
 #include <cassert>
 #include <unordered_map>
-#include <optional>
 #include <chrono>
 #include <random>
 #include <algorithm>
+#include <numeric>
 
 using namespace gch;
 
@@ -204,6 +204,7 @@ void test_assign (void)
   int y = 3;
   assert (r.emplace (y) == 3);
   assert (r == &y);
+  static_cast<void> (y);
   
   print_test_footer ();
 }
@@ -225,6 +226,7 @@ void test_nullopt (void)
   int y = 2;
   r0 = x;
   assert (r0.has_value ());
+  static_cast<void> (y);
   
   r1 = x;
   assert (r1.has_value ());
@@ -485,6 +487,7 @@ void test_comparison (void)
   assert (! (py <= rx));
   assert (! (rx >= py));
   assert (  (py >= rx));
+  static_cast<void> (py);
   
   // compare with a pointer (equal)
   int *px = &a[0];
@@ -500,6 +503,7 @@ void test_comparison (void)
   assert (  (px <= rx));
   assert (  (rx >= px));
   assert (  (px >= rx));
+  static_cast<void> (px);
   
   // compare pointer with optional_ref which is nullopt
   assert (! (rn == py));
@@ -629,7 +633,7 @@ void test_perf_equality (void)
   print_test_header ("test perf equality");
   std::cout << std::endl;
   
-  constexpr auto num_tests = 10;
+  auto num_tests = 10;
   std::vector<double> times (num_tests);
   std::generate (times.begin (), times.end (), test_perf_equality_worker);
   auto mean = std::accumulate (times.begin (), times.end (), 0.0) / num_tests;
@@ -690,8 +694,6 @@ void test_pointer_cast (void)
 
 int main (void) 
 {
-  optional_ref<int> y (nullptr);
-  std::tuple<int> x;
   static_cast<void> (g_rx);  
   test_const ();
   test_arrow ();

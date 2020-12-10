@@ -1412,8 +1412,7 @@ namespace gch
   }
 
 #ifdef GCH_CTAD_SUPPORT
-  template <typename U>
-  optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
+  template <typename U> optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
 #endif
 
 }
