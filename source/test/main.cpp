@@ -415,7 +415,7 @@ void test_comparison (void)
   assert (! (nullptr >= rz     ));
   
   // set nullopt
-  const optional_ref<int> rn (nullopt);
+  const optional_ref<int> rn = { };
   
   // same as above, except rn contains nullopt this time
   assert (! (rx == rn));

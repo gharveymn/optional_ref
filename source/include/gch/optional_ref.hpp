@@ -85,11 +85,11 @@ namespace gch
    */
   struct nullopt_t
   {
-    static constexpr struct engage_tag { } engage { };
-    constexpr explicit nullopt_t (engage_tag) noexcept { }
+    static constexpr struct create_tag { } create { };
+    constexpr explicit nullopt_t (create_tag) noexcept { }
   };
 
-  GCH_INLINE_VARS constexpr nullopt_t nullopt { nullopt_t::engage };
+  GCH_INLINE_VARS constexpr nullopt_t nullopt { nullopt_t::create };
   
   /**
    * An exception class for cases of bad access
