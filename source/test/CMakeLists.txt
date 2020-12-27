@@ -16,6 +16,6 @@ ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 ENDIF()
 
 SET_TARGET_PROPERTIES(test_optional_ref PROPERTIES
-          CXX_STANDARD          20
+          CXX_STANDARD          11
           CXX_STANDARD_REQUIRED NO
           CXX_EXTENSIONS        NO)
