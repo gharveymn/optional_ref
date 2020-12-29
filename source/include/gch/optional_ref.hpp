@@ -47,11 +47,11 @@
 #  endif
 #endif
 
-#ifndef GCH_INLINE_VARS
+#ifndef GCH_INLINE_VAR
 #  if __cpp_inline_variables >= 201606L
-#    define GCH_INLINE_VARS inline
+#    define GCH_INLINE_VAR inline
 #  else
-#    define GCH_INLINE_VARS
+#    define GCH_INLINE_VAR
 #  endif
 #endif
 
@@ -96,7 +96,7 @@ namespace gch
     constexpr explicit nullopt_t (create_tag) noexcept { }
   };
 
-  GCH_INLINE_VARS constexpr nullopt_t nullopt { nullopt_t::create };
+  GCH_INLINE_VAR constexpr nullopt_t nullopt { nullopt_t::create };
 
   /**
    * An exception class for cases of bad access
