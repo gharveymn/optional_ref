@@ -695,7 +695,7 @@ int main (void)
   test_hash ();
   test_contains ();
   test_deduction ();
-  test_perf_equality ();
+  // test_perf_equality ();
   test_pointer_cast ();
   return 0;
 }
