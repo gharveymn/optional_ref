@@ -1581,6 +1581,14 @@ namespace gch
   template <typename U> optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
 #endif
 
+  /**
+   * A convenience alias for const references.
+   *
+   * @tparam T an unqualified value type.
+   */
+  template <typename T>
+  using optional_cref = optional_ref<const T>;
+
 }
 
 namespace std
