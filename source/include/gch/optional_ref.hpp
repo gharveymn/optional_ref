@@ -48,6 +48,22 @@
 #  endif
 #endif
 
+#ifndef GCH_CPP20_CONSTEVAL
+#  if defined (__cpp_consteval) && __cpp_consteval >= 201811L
+#    define GCH_CPP20_CONSTEVAL consteval
+#  else
+#    define GCH_CPP20_CONSTEVAL constexpr
+#  endif
+#endif
+
+#ifndef GCH_SWAP_CONSTEXPR
+#  if defined (__cpp_lib_constexpr_algorithms) && __cpp_lib_constexpr_algorithms >= 201806L
+#    define GCH_SWAP_CONSTEXPR constexpr
+#  else
+#    define GCH_SWAP_CONSTEXPR
+#  endif
+#endif
+
 #ifndef GCH_NODISCARD
 #  if defined (__has_cpp_attribute) && __has_cpp_attribute (nodiscard) >= 201603L
 #    if ! defined (__clang__) || defined (GCH_CLANG_17)
@@ -57,14 +73,6 @@
 #    endif
 #  else
 #    define GCH_NODISCARD
-#  endif
-#endif
-
-#ifndef GCH_SWAP_CONSTEXPR
-#  if defined (__cpp_lib_constexpr_algorithms) && __cpp_lib_constexpr_algorithms >= 201806L
-#    define GCH_SWAP_CONSTEXPR constexpr
-#  else
-#    define GCH_SWAP_CONSTEXPR
 #  endif
 #endif
 
@@ -105,8 +113,16 @@ namespace gch
    */
   struct nullopt_t
   {
-    static constexpr struct create_tag { } create { };
-    constexpr explicit nullopt_t (create_tag) noexcept { }
+    struct create_tag { };
+    static constexpr create_tag create { };
+
+    constexpr explicit
+    nullopt_t (create_tag) noexcept
+    { }
+
+    constexpr /* implicit */
+    nullopt_t (std::nullptr_t) noexcept
+    { }
   };
 
   GCH_INLINE_VAR constexpr nullopt_t nullopt { nullopt_t::create };
@@ -126,7 +142,7 @@ namespace gch
     ~bad_optional_access           (void) noexcept override         = default;
 
     GCH_NODISCARD
-    const char*
+    const char *
     what (void) const noexcept override { return "bad optional_ref access"; }
   };
 
@@ -142,35 +158,101 @@ namespace gch
     static_assert(! std::is_reference<Value>::value,
       "optional_ref expects a value type as a template argument, not a reference.");
 
-    using value_type      = Value;        /*!< The value type of the stored reference */
-    using reference       = Value&;       /*!< The reference type to be wrapped       */
-    using pointer         = Value*;       /*!< The pointer type to the value type     */
-    using const_reference = const Value&; /*!< A constant reference to `Value`        */
-    using const_pointer   = const Value*; /*!< A constant pointer to `Value`          */
+    using value_type      = Value;         /*!< The value type of the stored reference */
+    using reference       = Value&;        /*!< The reference type to be wrapped       */
+    using pointer         = Value *;       /*!< The pointer type to the value type     */
+    using const_reference = const Value&;  /*!< A constant reference to `Value`        */
+    using const_pointer   = const Value *; /*!< A constant pointer to `Value`          */
 
   private:
     template <typename U>
-    using constructible_from_pointer_to =
+    using constructible_from_pointer =
       std::is_constructible<pointer, decltype (&std::declval<U&> ())>;
 
     template <typename U>
-    using pointer_to_is_convertible =
+    using pointer_is_convertible =
       std::is_convertible<decltype (&std::declval<U&> ()), pointer>;
 
-    template <typename T> struct is_optional_ref                  : std::false_type { };
-    template <typename T> struct is_optional_ref<optional_ref<T>> : std::true_type  { };
-
   public:
-    //! For the record, I don't think the explicit conversions are even possible
-    //! since we are only using raw pointers, but I can't find a definitive
-    //! reference to that fact, so they stay.
+    // For the record, I don't think the explicit conversions are even possible
+    // since we are only using raw pointers, but I can't find a definitive
+    // reference to that fact, so they stay.
 
-    optional_ref            (void)                    = default;
-    optional_ref            (const optional_ref&)     = default;
-    optional_ref            (optional_ref&&) noexcept = default;
-    optional_ref& operator= (const optional_ref&)     = default;
-    optional_ref& operator= (optional_ref&&) noexcept = default;
-    ~optional_ref           (void)                    = default;
+    /**
+     * Constructor
+     *
+     * A default constructor.
+     *
+     * The `optional_ref` has no value after default
+     * construction.
+     */
+    optional_ref (void) noexcept = default;
+
+    /**
+     * Constructor
+     *
+     * A copy constructor.
+     *
+     * If `other` contains a value, then that value
+     * is copied into `*this`.
+     *
+     * Note: TriviallyCopyable.
+     */
+    optional_ref (const optional_ref& other) noexcept = default;
+
+    /**
+     * Constructor
+     *
+     * A move constructor.
+     *
+     * If `other` contains a value, then that value
+     * is copied into `*this`. It is implementation
+     * defined if `other` contains a value after this.
+     *
+     * Note: TriviallyCopyable.
+     */
+    optional_ref (optional_ref&& other) noexcept = default;
+
+    /**
+     * Assignment operator
+     *
+     * A copy-assignment operator.
+     *
+     * The resultant state of `*this` is equivalent
+     * to that of `other`.
+     *
+     * Note: TriviallyCopyable.
+     *
+     * @return `*this`
+     */
+    optional_ref&
+    operator= (const optional_ref& other) noexcept = default;
+
+    /**
+     * Assignment operator
+     *
+     * A move-assignment operator.
+     *
+     * Sets the state of `*this` to that of `other`.
+     * It is implementation defined if `other` contains
+     * a value after this.
+     *
+     * Note: TriviallyCopyable.
+     *
+     * @return `*this`
+     */
+    optional_ref&
+    operator= (optional_ref&& other) noexcept = default;
+
+    /**
+     * Destructor
+     *
+     * A trivial destructor.
+     *
+     * Note: TriviallyCopyable.
+     *
+     */
+    ~optional_ref (void) noexcept = default;
 
     /**
      * Constructor
@@ -192,8 +274,8 @@ namespace gch
      * @param ref a reference whose pointer is implicitly convertible to type `pointer`.
      */
     template <typename U,
-              typename std::enable_if<constructible_from_pointer_to<U>::value
-                                  &&  pointer_to_is_convertible<U>::value>::type * = nullptr>
+              typename std::enable_if<constructible_from_pointer<U>::value
+                                  &&  pointer_is_convertible<U>::value>::type * = nullptr>
     constexpr /* implicit */
     optional_ref (U& ref) noexcept
       : m_ptr (&ref)
@@ -209,8 +291,8 @@ namespace gch
      * @param ref a argument from which `pointer` may be explicitly constructed.
      */
     template <typename U,
-              typename std::enable_if<constructible_from_pointer_to<U>::value
-                                  &&! pointer_to_is_convertible<U>::value>::type * = nullptr>
+              typename std::enable_if<constructible_from_pointer<U>::value
+                                  &&! pointer_is_convertible<U>::value>::type * = nullptr>
     constexpr explicit
     optional_ref (U& ref) noexcept
       : m_ptr (static_cast<pointer> (&ref))
@@ -222,7 +304,7 @@ namespace gch
      * A deleted contructor for the case where `ref` is an rvalue reference.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
     optional_ref (const U&&) = delete;
 
     /**
@@ -475,7 +557,7 @@ namespace gch
      * @return the argument `ref`.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
     GCH_CPP14_CONSTEXPR
     reference
     emplace (U& ref) noexcept
@@ -490,7 +572,7 @@ namespace gch
      * does not sustain the object lifetime.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
     reference
     emplace (const U&&) = delete;
 
@@ -525,7 +607,7 @@ namespace gch
      * @return whether `*this` contains `ref`
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
     GCH_NODISCARD constexpr
     bool
     contains (U& ref) const noexcept
@@ -540,7 +622,7 @@ namespace gch
      * incorrectly written, so we might as well delete it.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
     bool
     contains (const U&&) const noexcept = delete;
 
@@ -574,8 +656,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () == r.get_pointer ()))
     -> decltype (l.get_pointer () == r.get_pointer ())
   {
-    return (l.has_value () == r.has_value ()) && (! l.has_value ()
-                                                  || (l.get_pointer () == r.get_pointer ()));
+    return l.has_value () == r.has_value ()
+       &&  (! l.has_value () || l.get_pointer () == r.get_pointer ());
   }
 
   /**
@@ -598,8 +680,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () != r.get_pointer ()))
     -> decltype (l.get_pointer () != r.get_pointer ())
   {
-    return (l.has_value () != r.has_value ()) || (l.has_value ()
-                                                  && (l.get_pointer () != r.get_pointer ()));
+    return l.has_value () != r.has_value ()
+       ||  (l.has_value () && l.get_pointer () != r.get_pointer ());
   }
 
   /**
@@ -622,7 +704,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () < r.get_pointer ()))
     -> decltype (l.get_pointer () < r.get_pointer ())
   {
-    return r.has_value () && (! l.has_value () || (l.get_pointer () < r.get_pointer ()));
+    return r.has_value ()
+       &&  (! l.has_value () || l.get_pointer () < r.get_pointer ());
   }
 
   /**
@@ -645,7 +728,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () > r.get_pointer ()))
     -> decltype (l.get_pointer () > r.get_pointer ())
   {
-    return l.has_value () && (! r.has_value () || (l.get_pointer () > r.get_pointer ()));
+    return l.has_value ()
+       &&  (! r.has_value () || l.get_pointer () > r.get_pointer ());
   }
 
   /**
@@ -668,7 +752,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () <= r.get_pointer ()))
     -> decltype (l.get_pointer () <= r.get_pointer ())
   {
-    return ! l.has_value () || (r.has_value () && (l.get_pointer () <= r.get_pointer ()));
+    return ! l.has_value ()
+         ||  (r.has_value () && l.get_pointer () <= r.get_pointer ());
   }
 
   /**
@@ -691,7 +776,8 @@ namespace gch
     noexcept (noexcept (l.get_pointer () >= r.get_pointer ()))
     -> decltype (l.get_pointer () >= r.get_pointer ())
   {
-    return ! r.has_value () || (l.has_value () && (l.get_pointer () >= r.get_pointer ()));
+    return ! r.has_value ()
+         ||  (l.has_value () && l.get_pointer () >= r.get_pointer ());
   }
 
 #ifdef GCH_LIB_THREE_WAY_COMPARISON
@@ -717,7 +803,7 @@ namespace gch
     -> std::compare_three_way_result_t<decltype (l.get_pointer ()), decltype (r.get_pointer ())>
   {
     return (l.has_value () && r.has_value ()) ? (l.get_pointer () <=> r.get_pointer ())
-                                              : (bool (l) <=> bool (r));
+                                              : (l.has_value ()   <=> r.has_value ());
   }
 
 #endif
@@ -757,7 +843,9 @@ namespace gch
    * @see std::optional::operator<=>
    */
   template <typename T> GCH_NODISCARD
-  constexpr std::strong_ordering operator<=> (const optional_ref<T>& l, nullopt_t) noexcept
+  constexpr
+  std::strong_ordering
+  operator<=> (const optional_ref<T>& l, nullopt_t) noexcept
   {
     return l.has_value () <=> false;
   }
@@ -837,7 +925,7 @@ namespace gch
    * @see std::optional::operator<
    */
   template <typename T>
-  GCH_NODISCARD constexpr
+  GCH_NODISCARD GCH_CPP20_CONSTEVAL
   bool
   operator< (const optional_ref<T>&, nullopt_t) noexcept
   {
@@ -897,7 +985,7 @@ namespace gch
    * @see std::optional::operator>
    */
   template <typename T>
-  GCH_NODISCARD constexpr
+  GCH_NODISCARD GCH_CPP20_CONSTEVAL
   bool
   operator> (nullopt_t, const optional_ref<T>&) noexcept
   {
@@ -937,7 +1025,7 @@ namespace gch
    * @see std::optional::operator<=
    */
   template <typename T>
-  GCH_NODISCARD constexpr
+  GCH_NODISCARD GCH_CPP20_CONSTEVAL
   bool
   operator<= (nullopt_t, const optional_ref<T>&) noexcept
   {
@@ -957,7 +1045,7 @@ namespace gch
    * @see std::optional::operator>=
    */
   template <typename T>
-  GCH_NODISCARD constexpr
+  GCH_NODISCARD GCH_CPP20_CONSTEVAL
   bool
   operator>= (const optional_ref<T>&, nullopt_t) noexcept
   {
@@ -987,270 +1075,6 @@ namespace gch
 #endif
 
   /**
- * An equality comparison function.
- *
- * We compare by address, not by value.
- *
- * @tparam T the value type of `l`.
- * @param l an `optional_ref`.
- * @param r a `std::nullptr_t`.
- * @return the result of the equality comparison.
- *
- * @see std::optional::operator==
- */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator== (const optional_ref<T>& l, std::nullptr_t) noexcept
-  {
-    return ! l.has_value ();
-  }
-
-#ifdef GCH_LIB_THREE_WAY_COMPARISON
-
-  /**
-   * A three-way comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the three-way comparison.
-   *
-   * @see std::optional::operator<=>
-   */
-  template <typename T> GCH_NODISCARD
-  constexpr std::strong_ordering operator<=> (const optional_ref<T>& l, std::nullptr_t) noexcept
-  {
-    return l.has_value () <=> false;
-  }
-
-#else
-
-  /**
-   * An equality comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the equality comparison.
-   *
-   * @see std::optional::operator==
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator== (std::nullptr_t, const optional_ref<T>& r) noexcept
-  {
-    return ! r.has_value ();
-  }
-
-  /**
-   * An inequality comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `l`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the inequality comparison.
-   *
-   * @see std::optional::operator!=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator!= (const optional_ref<T>& l, std::nullptr_t) noexcept
-  {
-    return l.has_value ();
-  }
-
-  /**
-   * An inequality comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the inequality comparison.
-   *
-   * @see std::optional::operator!=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator!= (std::nullptr_t, const optional_ref<T>& r) noexcept
-  {
-    return r.has_value ();
-  }
-
-  /**
-   * A less-than comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `l`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the less-than comparison.
-   *
-   * @see std::optional::operator<
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator< (const optional_ref<T>&, std::nullptr_t) noexcept
-  {
-    return false;
-  }
-
-  /**
-   * A less-than comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the less-than comparison.
-   *
-   * @see std::optional::operator<
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator< (std::nullptr_t, const optional_ref<T>& r) noexcept
-  {
-    return r.has_value ();
-  }
-
-  /**
-   * A greater-than comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `l`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the greater-than comparison.
-   *
-   * @see std::optional::operator>
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator> (const optional_ref<T>& l, std::nullptr_t) noexcept
-  {
-    return l.has_value ();
-  }
-
-  /**
-   * A greater-than comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the greater-than comparison.
-   *
-   * @see std::optional::operator>
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator> (std::nullptr_t, const optional_ref<T>&) noexcept
-  {
-    return false;
-  }
-
-  /**
-   * A less-than-equal comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `l`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the less-than-equal comparison.
-   *
-   * @see std::optional::operator<=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator<= (const optional_ref<T>& l, std::nullptr_t) noexcept
-  {
-    return ! l.has_value ();
-  }
-
-  /**
-   * A less-than-equal comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the less-than-equal comparison.
-   *
-   * @see std::optional::operator<=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator<= (std::nullptr_t, const optional_ref<T>&) noexcept
-  {
-    return true;
-  }
-
-  /**
-   * A greater-than-equal comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `l`.
-   * @param l an `optional_ref`.
-   * @param r a `std::nullptr_t`.
-   * @return the result of the greater-than-equal comparison.
-   *
-   * @see std::optional::operator>=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator>= (const optional_ref<T>&, std::nullptr_t) noexcept
-  {
-    return true;
-  }
-
-  /**
-   * A greater-than-equal comparison function.
-   *
-   * We compare by address, not by value.
-   *
-   * @tparam T the value type of `r`.
-   * @param l a `std::nullptr_t`.
-   * @param r an `optional_ref`.
-   * @return the result of the greater-than-equal comparison.
-   *
-   * @see std::optional::operator>=
-   */
-  template <typename T>
-  GCH_NODISCARD constexpr
-  bool
-  operator>= (std::nullptr_t, const optional_ref<T>& r) noexcept
-  {
-    return ! r.has_value ();
-  }
-
-#endif
-
-  /**
    * An equality comparison function.
    *
    * We compare by address, not by value.
@@ -1267,7 +1091,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator== (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () == r)) -> decltype (l.get_pointer () == r)
+    noexcept (noexcept (l.get_pointer () == r))
+    -> decltype (l.get_pointer () == r)
   {
     return (l.has_value () && (l.get_pointer () == r));
   }
@@ -1289,7 +1114,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator== (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l == r.get_pointer ())) -> decltype (l == r.get_pointer ())
+    noexcept (noexcept (l == r.get_pointer ()))
+    -> decltype (l == r.get_pointer ())
   {
     return (r.has_value () && (l == r.get_pointer ()));
   }
@@ -1311,7 +1137,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator!= (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () != r)) -> decltype (l.get_pointer () != r)
+    noexcept (noexcept (l.get_pointer () != r))
+    -> decltype (l.get_pointer () != r)
   {
     return (! l.has_value () || (l.get_pointer () != r));
   }
@@ -1333,7 +1160,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator!= (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l != r.get_pointer ())) -> decltype (l != r.get_pointer ())
+    noexcept (noexcept (l != r.get_pointer ()))
+    -> decltype (l != r.get_pointer ())
   {
     return (! r.has_value () || (l != r.get_pointer ()));
   }
@@ -1355,7 +1183,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator< (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () < r)) -> decltype (l.get_pointer () < r)
+    noexcept (noexcept (l.get_pointer () < r))
+    -> decltype (l.get_pointer () < r)
   {
     return (! l.has_value () || (l.get_pointer () < r));
   }
@@ -1377,7 +1206,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator< (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l < r.get_pointer ())) -> decltype (l < r.get_pointer ())
+    noexcept (noexcept (l < r.get_pointer ()))
+    -> decltype (l < r.get_pointer ())
   {
     return (r.has_value () && (l < r.get_pointer ()));
   }
@@ -1399,7 +1229,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator> (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () > r)) -> decltype (l.get_pointer () > r)
+    noexcept (noexcept (l.get_pointer () > r))
+    -> decltype (l.get_pointer () > r)
   {
     return (l.has_value () && (l.get_pointer () > r));
   }
@@ -1421,7 +1252,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator> (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l > r.get_pointer ())) -> decltype (l > r.get_pointer ())
+    noexcept (noexcept (l > r.get_pointer ()))
+    -> decltype (l > r.get_pointer ())
   {
     return (! r.has_value () || (l > r.get_pointer ()));
   }
@@ -1443,7 +1275,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator<= (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () <= r)) -> decltype (l.get_pointer () <= r)
+    noexcept (noexcept (l.get_pointer () <= r))
+    -> decltype (l.get_pointer () <= r)
   {
     return (! l.has_value () || (l.get_pointer () <= r));
   }
@@ -1465,7 +1298,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator<= (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l <= r.get_pointer ())) -> decltype (l <= r.get_pointer ())
+    noexcept (noexcept (l <= r.get_pointer ()))
+    -> decltype (l <= r.get_pointer ())
   {
     return (r.has_value () && (l <= r.get_pointer ()));
   }
@@ -1487,7 +1321,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator>= (const optional_ref<T>& l, const U *r)
-    noexcept (noexcept (l.get_pointer () >= r)) -> decltype (l.get_pointer () >= r)
+    noexcept (noexcept (l.get_pointer () >= r))
+    -> decltype (l.get_pointer () >= r)
   {
     return (l.has_value () && (l.get_pointer () >= r));
   }
@@ -1509,7 +1344,8 @@ namespace gch
   GCH_NODISCARD constexpr
   auto
   operator>= (const U *l, const optional_ref<T>& r)
-    noexcept (noexcept (l >= r.get_pointer ())) -> decltype (l >= r.get_pointer ())
+    noexcept (noexcept (l >= r.get_pointer ()))
+    -> decltype (l >= r.get_pointer ())
   {
     return (! r.has_value () || (l >= r.get_pointer ()));
   }
@@ -1605,7 +1441,7 @@ namespace std
     /**
      * An invokable operator.
      *
-     * We just do a noop pointer hash (which is unique).
+     * We just use the same hash as the underlying pointer.
      *
      * @param opt_ref a reference to a value of type `gch::optional_ref`.
      * @return a hash of the argument.
@@ -1613,12 +1449,10 @@ namespace std
     std::size_t
     operator() (const gch::optional_ref<T>& opt_ref) const noexcept
     {
-      return reinterpret_cast<std::size_t> (opt_ref.get_pointer ());
+      return std::hash<typename gch::optional_ref<T>::pointer> { } (opt_ref.get_pointer ());
     }
   };
 
 }
-
-
 
 #endif

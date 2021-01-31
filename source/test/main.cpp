@@ -7,6 +7,7 @@
 #include <random>
 #include <algorithm>
 #include <numeric>
+#include <optional>
 
 using namespace gch;
 
@@ -57,23 +58,6 @@ template bool gch::operator<= (const optional_ref<int>&, nullopt_t              
 template bool gch::operator<= (nullopt_t,                const optional_ref<int>&) noexcept;
 template bool gch::operator>= (const optional_ref<int>&, nullopt_t               ) noexcept;
 template bool gch::operator>= (nullopt_t,                const optional_ref<int>&) noexcept;
-#endif
-
-template bool gch::operator== (const optional_ref<int>&, std::nullptr_t) noexcept;
-#ifdef GCH_LIB_THREE_WAY_COMPARISON
-template std::strong_ordering gch::operator<=> (const optional_ref<int>&, std::nullptr_t) noexcept;
-#else
-template bool gch::operator== (std::nullptr_t,           const optional_ref<int>&) noexcept;
-template bool gch::operator!= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
-template bool gch::operator!= (std::nullptr_t,           const optional_ref<int>&) noexcept;
-template bool gch::operator<  (const optional_ref<int>&, std::nullptr_t          ) noexcept;
-template bool gch::operator<  (std::nullptr_t,           const optional_ref<int>&) noexcept;
-template bool gch::operator>  (const optional_ref<int>&, std::nullptr_t          ) noexcept;
-template bool gch::operator>  (std::nullptr_t,           const optional_ref<int>&) noexcept;
-template bool gch::operator<= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
-template bool gch::operator<= (std::nullptr_t,           const optional_ref<int>&) noexcept;
-template bool gch::operator>= (const optional_ref<int>&, std::nullptr_t          ) noexcept;
-template bool gch::operator>= (std::nullptr_t,           const optional_ref<int>&) noexcept;
 #endif
 
 template bool gch::operator== (const optional_ref<int>&, const int *             ) noexcept;
