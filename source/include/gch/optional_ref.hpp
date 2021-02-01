@@ -15,6 +15,32 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef __clang__
+#  ifndef GCH_CLANG
+#    define GCH_CLANG
+#  endif
+#  if defined (__cplusplus) && __cplusplus >= 202002L
+#    ifndef GCH_CLANG_20
+#      define GCH_CLANG_20
+#    endif
+#  endif
+#  if defined (__cplusplus) && __cplusplus >= 201703L
+#    ifndef GCH_CLANG_17
+#      define GCH_CLANG_17
+#    endif
+#  endif
+#  if defined (__cplusplus) && __cplusplus >= 201402L
+#    ifndef GCH_CLANG_14
+#      define GCH_CLANG_14
+#    endif
+#  endif
+#  if defined (__cplusplus) && __cplusplus >= 201103L
+#    ifndef GCH_CLANG_11
+#      define GCH_CLANG_11
+#    endif
+#  endif
+#endif
+
 #ifdef __cpp_constexpr
 #  ifndef GCH_CPP14_CONSTEXPR
 #    if __cpp_constexpr >= 201304L
@@ -166,11 +192,11 @@ namespace gch
 
   private:
     template <typename U>
-    using constructible_from_pointer =
+    using constructible_from_pointer_to =
       std::is_constructible<pointer, decltype (&std::declval<U&> ())>;
 
     template <typename U>
-    using pointer_is_convertible =
+    using pointer_to_is_convertible =
       std::is_convertible<decltype (&std::declval<U&> ()), pointer>;
 
   public:
@@ -267,49 +293,6 @@ namespace gch
     /**
      * Constructor
      *
-     * A constructor for the case where `U*` is
-     * implicitly convertible to type `pointer`.
-     *
-     * @tparam U a referenced value type.
-     * @param ref a reference whose pointer is implicitly convertible to type `pointer`.
-     */
-    template <typename U,
-              typename std::enable_if<constructible_from_pointer<U>::value
-                                  &&  pointer_is_convertible<U>::value>::type * = nullptr>
-    constexpr /* implicit */
-    optional_ref (U& ref) noexcept
-      : m_ptr (&ref)
-    { }
-
-    /**
-     * Constructor
-     *
-     * A constructor for the case where `pointer` is
-     * explicitly constructable from `U*`.
-     *
-     * @tparam U a referenced value type.
-     * @param ref a argument from which `pointer` may be explicitly constructed.
-     */
-    template <typename U,
-              typename std::enable_if<constructible_from_pointer<U>::value
-                                  &&! pointer_is_convertible<U>::value>::type * = nullptr>
-    constexpr explicit
-    optional_ref (U& ref) noexcept
-      : m_ptr (static_cast<pointer> (&ref))
-    { }
-
-    /**
-     * Constructor
-     *
-     * A deleted contructor for the case where `ref` is an rvalue reference.
-     */
-    template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
-    optional_ref (const U&&) = delete;
-
-    /**
-     * Constructor
-     *
      * A converting constructor for types implicitly
      * convertible to `pointer`. This is so we don't
      * need to dereference or inspect pointers before
@@ -318,12 +301,12 @@ namespace gch
      * @tparam U a type implicitly convertible to `pointer`.
      * @param ptr a pointer.
      */
-    template <typename U,
-              typename std::enable_if<std::is_constructible<pointer, U>::value
-                                  &&  std::is_convertible<U, pointer>::value>::type * = nullptr>
+    template <typename Ptr,
+              typename std::enable_if<std::is_constructible<pointer, Ptr>::value
+                                  &&  std::is_convertible<Ptr, pointer>::value>::type * = nullptr>
     constexpr /* implicit */
-    optional_ref (U&& ptr) noexcept
-      : m_ptr (ptr)
+    optional_ref (Ptr&& ptr) noexcept
+      : m_ptr (std::forward<Ptr> (ptr))
     { }
 
     /**
@@ -334,15 +317,49 @@ namespace gch
      * need to dereference or inspect pointers before
      * creation; we can just use the pointer directly.
      *
-     * @tparam U a type explicitly convertible to `pointer`.
+     * @tparam Ptr a type explicitly convertible to `pointer`.
      * @param ptr a pointer.
      */
-    template <typename U,
-              typename std::enable_if<std::is_constructible<pointer, U>::value
-                                  &&! std::is_convertible<U, pointer>::value>::type * = nullptr>
+    template <typename Ptr,
+              typename std::enable_if<std::is_constructible<pointer, Ptr>::value
+                                  &&! std::is_convertible<Ptr, pointer>::value>::type * = nullptr>
     constexpr explicit
-    optional_ref (U&& ptr) noexcept
-      : m_ptr (static_cast<pointer> (ptr))
+    optional_ref (Ptr&& ptr) noexcept
+      : m_ptr (std::forward<Ptr> (ptr))
+    { }
+
+    /**
+     * Constructor
+     *
+     * A constructor for the case where `U*` is
+     * implicitly convertible to type `pointer`.
+     *
+     * @tparam U a referenced value type.
+     * @param ref a reference whose pointer is implicitly convertible to type `pointer`.
+     */
+    template <typename U,
+              typename std::enable_if<constructible_from_pointer_to<U>::value
+                                  &&  pointer_to_is_convertible<U>::value>::type * = nullptr>
+    constexpr /* implicit */
+    optional_ref (U& ref) noexcept
+      : optional_ref (&ref)
+    { }
+
+    /**
+     * Constructor
+     *
+     * A constructor for the case where `pointer` is
+     * explicitly constructible from `U*`.
+     *
+     * @tparam U a referenced value type.
+     * @param ref a argument from which `pointer` may be explicitly constructed.
+     */
+    template <typename U,
+              typename std::enable_if<constructible_from_pointer_to<U>::value
+                                  &&! pointer_to_is_convertible<U>::value>::type * = nullptr>
+    constexpr explicit
+    optional_ref (U& ref) noexcept
+      : optional_ref (&ref)
     { }
 
     /**
@@ -374,11 +391,11 @@ namespace gch
      *            which `pointer` may be explicitly constructed.
      */
     template <typename U,
-              typename std::enable_if<std::is_constructible<pointer, U*>::value
-                                  &&! std::is_convertible<U*, pointer>::value>::type * = nullptr>
+              typename std::enable_if<std::is_constructible<pointer, U *>::value
+                                  &&! std::is_convertible<U *, pointer>::value>::type * = nullptr>
     constexpr explicit
     optional_ref (const optional_ref<U>& other) noexcept
-      : m_ptr (static_cast<pointer> (other.get_pointer ()))
+      : m_ptr (other.get_pointer ())
     { }
 
     /**
@@ -505,7 +522,7 @@ namespace gch
      */
     GCH_NODISCARD constexpr
     const_reference
-    value_or (const Value&& default_value) const noexcept
+    value_or (const value_type&& default_value) const noexcept
     {
       return has_value () ? *m_ptr : default_value;
     }
@@ -517,7 +534,7 @@ namespace gch
      * its lifetime isn't extended.
      */
     template <typename U,
-              typename = typename std::enable_if<std::is_constructible<pointer, U*>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
     GCH_NODISCARD constexpr
     const_reference
     value_or (const U&& default_value) const noexcept = delete;
@@ -547,6 +564,15 @@ namespace gch
       m_ptr = nullptr;
     }
 
+    template <typename Ptr,
+              typename = typename std::enable_if<std::is_constructible<pointer, Ptr>::value>::type>
+    GCH_CPP14_CONSTEXPR
+    reference
+    emplace (Ptr&& ptr) noexcept
+    {
+      return *(m_ptr = pointer (ptr));
+    }
+
     /**
      * Sets the contained reference.
      *
@@ -557,12 +583,12 @@ namespace gch
      * @return the argument `ref`.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
     GCH_CPP14_CONSTEXPR
     reference
     emplace (U& ref) noexcept
     {
-      return *(m_ptr = static_cast<pointer> (&ref));
+      return emplace (&ref);
     }
 
     /**
@@ -572,7 +598,7 @@ namespace gch
      * does not sustain the object lifetime.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
     reference
     emplace (const U&&) = delete;
 
@@ -588,12 +614,12 @@ namespace gch
      * @return a reference to the contained pointer.
      */
     template <typename U,
-              typename = typename std::enable_if<std::is_constructible<pointer, U *>::value>>
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>>
     GCH_CPP14_CONSTEXPR
     reference
     emplace (const optional_ref<U>& other) noexcept
     {
-      return *(m_ptr = static_cast<pointer> (other.get ()));
+      return emplace (other.get_pointer ());
     }
 
     /**
@@ -602,17 +628,16 @@ namespace gch
      * Does a pointer comparison between the argument and
      * the stored reference.
      *
-     * @tparam U a reference type convertible to `reference`.
+     * @tparam U a reference type comparable to `pointer`.
      * @param ref an lvalue reference.
      * @return whether `*this` contains `ref`
      */
-    template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
+    template <typename U>
     GCH_NODISCARD constexpr
     bool
     contains (U& ref) const noexcept
     {
-      return static_cast<pointer> (&ref) == m_ptr;
+      return &ref == m_ptr;
     }
 
     /**
@@ -622,7 +647,7 @@ namespace gch
      * incorrectly written, so we might as well delete it.
      */
     template <typename U,
-              typename = typename std::enable_if<constructible_from_pointer<U>::value>::type>
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
     bool
     contains (const U&&) const noexcept = delete;
 
@@ -1408,13 +1433,22 @@ namespace gch
   template <typename U>
   GCH_NODISCARD constexpr
   optional_ref<typename std::remove_reference<U>::type>
-  make_optional_ref (U&& ref) noexcept
+  make_optional_ref (U& ref) noexcept
   {
-    return optional_ref<typename std::remove_reference<U>::type> { std::forward<U> (ref) };
+    return optional_ref<typename std::remove_reference<U>::type> { ref };
+  }
+
+  template <typename U>
+  GCH_NODISCARD constexpr
+  optional_ref<U>
+  make_optional_ref (U *ptr) noexcept
+  {
+    return optional_ref<U> { ptr };
   }
 
 #ifdef GCH_CTAD_SUPPORT
-  template <typename U> optional_ref (U&&) -> optional_ref<std::remove_reference_t<U>>;
+  template <typename U> optional_ref (U& ) -> optional_ref<std::remove_reference_t<U>>;
+  template <typename U> optional_ref (U *) -> optional_ref<U>;
 #endif
 
   /**

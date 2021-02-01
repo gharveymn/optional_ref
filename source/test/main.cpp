@@ -7,7 +7,7 @@
 #include <random>
 #include <algorithm>
 #include <numeric>
-#include <optional>
+// #include <optional>
 
 using namespace gch;
 
@@ -664,6 +664,29 @@ void test_pointer_cast (void)
   print_test_footer ();
 }
 
+struct incomp_struct;
+incomp_struct& get_incomp (void);
+
+void test_incomplete (void)
+{
+  print_test_header ("test incomplete type");
+
+  incomp_struct& incomp = get_incomp ();
+  optional_ref<incomp_struct> o (incomp);
+  optional_ref<incomp_struct> op (&incomp);
+
+  assert (o == op);
+
+  print_test_footer ();
+}
+
+struct incomp_struct { };
+incomp_struct& get_incomp (void)
+{
+  static incomp_struct incomp { };
+  return incomp;
+}
+
 int main (void)
 {
   static_cast<void> (g_rx);
@@ -681,5 +704,6 @@ int main (void)
   test_deduction ();
   // test_perf_equality ();
   test_pointer_cast ();
+  test_incomplete ();
   return 0;
 }
