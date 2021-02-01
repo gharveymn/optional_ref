@@ -352,7 +352,7 @@ namespace gch
      * explicitly constructible from `U*`.
      *
      * @tparam U a referenced value type.
-     * @param ref a argument from which `pointer` may be explicitly constructed.
+     * @param ref a reference where `pointer` is explicitly constructible from its pointer.
      */
     template <typename U,
               typename std::enable_if<constructible_from_pointer_to<U>::value
@@ -564,6 +564,15 @@ namespace gch
       m_ptr = nullptr;
     }
 
+    /**
+     * Sets the contained reference.
+     *
+     * Internally, sets the pointer to the argument pointer.
+     *
+     * @tparam U a reference type where `pointer` is explicitly constructible from its pointer.
+     * @param ref an lvalue reference.
+     * @return the contained reference.
+     */
     template <typename Ptr,
               typename = typename std::enable_if<std::is_constructible<pointer, Ptr>::value>::type>
     GCH_CPP14_CONSTEXPR
@@ -578,9 +587,9 @@ namespace gch
      *
      * Internally, sets the a pointer to the address of the referenced value.
      *
-     * @tparam U a reference type convertible to `reference`.
+     * @tparam U a pointer convertible to `pointer`.
      * @param ref an lvalue reference.
-     * @return the argument `ref`.
+     * @return the contained reference.
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
@@ -611,7 +620,7 @@ namespace gch
      * @tparam U a referenced value type.
      * @param other a optional_ref which contains a pointer from
      *              which `pointer` may be constructed.
-     * @return a reference to the contained pointer.
+     * @return the contained reference.
      */
     template <typename U,
               typename = typename std::enable_if<constructible_from_pointer_to<U>::value>>
@@ -1424,20 +1433,31 @@ namespace gch
    *
    * Creates an `optional_ref` with the specified argument.
    *
-   * @tparam U a forwarded type.
-   * @param ref a forwarded value.
-   * @return an `optional_ref` created from the argument.
+   * @tparam U a value type.
+   * @param ref a reference.
+   * @return an `optional_ref<U>` created from the argument.
    *
    * @see std::make_optional
    */
   template <typename U>
   GCH_NODISCARD constexpr
-  optional_ref<typename std::remove_reference<U>::type>
+  optional_ref<U>
   make_optional_ref (U& ref) noexcept
   {
-    return optional_ref<typename std::remove_reference<U>::type> { ref };
+    return optional_ref<U> { ref };
   }
 
+  /**
+   * An optional_ref creation function.
+   *
+   * Creates an `optional_ref` with the specified argument.
+   *
+   * @tparam U a value type.
+   * @param ref a pointer.
+   * @return an `optional_ref<U>` created from the argument.
+   *
+   * @see std::make_optional
+   */
   template <typename U>
   GCH_NODISCARD constexpr
   optional_ref<U>
@@ -1447,7 +1467,7 @@ namespace gch
   }
 
 #ifdef GCH_CTAD_SUPPORT
-  template <typename U> optional_ref (U& ) -> optional_ref<std::remove_reference_t<U>>;
+  template <typename U> optional_ref (U& ) -> optional_ref<U>;
   template <typename U> optional_ref (U *) -> optional_ref<U>;
 #endif
 
