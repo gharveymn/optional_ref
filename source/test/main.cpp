@@ -687,6 +687,42 @@ incomp_struct& get_incomp (void)
   return incomp;
 }
 
+#ifdef GCH_HAS_CPP14_CONSTEXPR
+
+constexpr
+bool
+test_constexpr_swap (void)
+{
+  int x = 1;
+  int y = 2;
+  optional_ref<int> rx { x };
+  optional_ref<int> ry { y };
+  optional_ref<int> rz { x };
+
+  bool t1 = (rx != ry) && (rx == rz);
+
+  using std::swap;
+  swap (ry, rz);
+
+  bool t2 = (rx == ry) && (rx != rz);
+
+  optional_ref<int> rm { x };
+  optional_ref<int> rn { nullopt };
+
+  bool t3 = (rn == nullopt) && (rm != nullopt) && (rm != rn) && (rm == rx);
+
+  using std::swap;
+  swap (rm, rn);
+
+  bool t4 = (rn != nullopt) && (rm == nullopt) && (rm != rn) && (rn == rx);
+
+  return t1 && t2 && t3 && t4;
+}
+
+static_assert (test_constexpr_swap (), "failed swap");
+
+#endif
+
 int main (void)
 {
   static_cast<void> (g_rx);

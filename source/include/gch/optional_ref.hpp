@@ -16,27 +16,9 @@
 #include <utility>
 
 #ifdef __clang__
-#  ifndef GCH_CLANG
-#    define GCH_CLANG
-#  endif
-#  if defined (__cplusplus) && __cplusplus >= 202002L
-#    ifndef GCH_CLANG_20
-#      define GCH_CLANG_20
-#    endif
-#  endif
 #  if defined (__cplusplus) && __cplusplus >= 201703L
 #    ifndef GCH_CLANG_17
 #      define GCH_CLANG_17
-#    endif
-#  endif
-#  if defined (__cplusplus) && __cplusplus >= 201402L
-#    ifndef GCH_CLANG_14
-#      define GCH_CLANG_14
-#    endif
-#  endif
-#  if defined (__cplusplus) && __cplusplus >= 201103L
-#    ifndef GCH_CLANG_11
-#      define GCH_CLANG_11
 #    endif
 #  endif
 #endif
@@ -79,14 +61,6 @@
 #    define GCH_CPP20_CONSTEVAL consteval
 #  else
 #    define GCH_CPP20_CONSTEVAL constexpr
-#  endif
-#endif
-
-#ifndef GCH_SWAP_CONSTEXPR
-#  if defined (__cpp_lib_constexpr_algorithms) && __cpp_lib_constexpr_algorithms >= 201806L
-#    define GCH_SWAP_CONSTEXPR constexpr
-#  else
-#    define GCH_SWAP_CONSTEXPR
 #  endif
 #endif
 
@@ -331,7 +305,7 @@ namespace gch
     /**
      * Constructor
      *
-     * A constructor for the case where `U*` is
+     * A constructor for the case where `U *` is
      * implicitly convertible to type `pointer`.
      *
      * @tparam U a referenced value type.
@@ -349,7 +323,7 @@ namespace gch
      * Constructor
      *
      * A constructor for the case where `pointer` is
-     * explicitly constructible from `U*`.
+     * explicitly constructible from `U *`.
      *
      * @tparam U a referenced value type.
      * @param ref a reference where `pointer` is explicitly constructible from its pointer.
@@ -365,8 +339,17 @@ namespace gch
     /**
      * Constructor
      *
+     * A deleted contructor for the case where `ref` is an rvalue reference.
+     */
+    template <typename U,
+              typename = typename std::enable_if<constructible_from_pointer_to<U>::value>::type>
+    optional_ref (const U&&) = delete;
+
+    /**
+     * Constructor
+     *
      * A copy constructor from another optional_ref for the case
-     * where `U*` is implicitly convertible to type `pointer`.
+     * where `U *` is implicitly convertible to type `pointer`.
      *
      * @tparam U a referenced value type.
      * @param other an optional_ref whose pointer is implicitly
@@ -384,7 +367,7 @@ namespace gch
      * Constructor
      *
      * A copy constructor from another optional_ref for the case
-     * where `pointer` is explicitly constructable from `U*`.
+     * where `pointer` is explicitly constructable from `U *`.
      *
      * @tparam U a referenced value type.
      * @param ref an optional_ref which contains a pointer from
@@ -544,12 +527,14 @@ namespace gch
      *
      * @param other a reference to another `optional_ref`.
      */
-    GCH_SWAP_CONSTEXPR
+    GCH_CPP14_CONSTEXPR
     void
     swap (optional_ref& other) noexcept
     {
-      using std::swap;
-      swap (this->m_ptr, other.m_ptr);
+      // manually done so we can lower the version requirements for constexpr
+      pointer tmp = m_ptr;
+      m_ptr       = other.m_ptr;
+      other.m_ptr = tmp;
     }
 
     /**
@@ -1421,7 +1406,7 @@ namespace gch
    * @param r an `optional_ref`.
    */
   template <typename T>
-  inline GCH_SWAP_CONSTEXPR
+  inline GCH_CPP14_CONSTEXPR
   void
   swap (optional_ref<T>& l, optional_ref<T>& r) noexcept
   {
@@ -1467,8 +1452,13 @@ namespace gch
   }
 
 #ifdef GCH_CTAD_SUPPORT
-  template <typename U> optional_ref (U& ) -> optional_ref<U>;
-  template <typename U> optional_ref (U *) -> optional_ref<U>;
+
+  template <typename U>
+  optional_ref (U&) -> optional_ref<U>;
+
+  template <typename U>
+  optional_ref (U *) -> optional_ref<U>;
+
 #endif
 
   /**
