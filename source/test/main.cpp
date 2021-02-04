@@ -723,6 +723,187 @@ static_assert (test_constexpr_swap (), "failed swap");
 
 #endif
 
+struct test_struct_base
+{
+  GCH_CPP14_CONSTEXPR
+  int
+  g (void) &
+  {
+    return 4;
+  }
+
+  constexpr
+  int
+  g (void) const &
+  {
+    return 5;
+  }
+
+  GCH_CPP14_CONSTEXPR
+  void
+  gv (void) { gv_val = g (); }
+
+  GCH_CPP14_CONSTEXPR
+  void
+  gv (void) const { }
+
+  int n = 6;
+  int gv_val = 0;
+};
+
+struct test_struct
+  : test_struct_base
+{
+  GCH_CPP14_CONSTEXPR
+  int
+  f (void)
+  {
+    return 1;
+  }
+
+  constexpr
+  int
+  f (void) const
+  {
+    return 2;
+  }
+
+  constexpr
+  int
+  h (void) const
+  {
+    return 11;
+  }
+
+  constexpr
+  int&
+  r (void)
+  {
+    return m;
+  }
+
+  GCH_CPP14_CONSTEXPR
+  void
+  fv (void) { fv_val = f (); }
+
+  GCH_CPP14_CONSTEXPR
+  void
+  fv (void) const { }
+
+  int m = 3;
+  int fv_val = 0;
+};
+
+constexpr
+int
+test_struct_func (test_struct&)
+{
+  return 7;
+}
+
+constexpr
+int
+test_struct_func (const test_struct&)
+{
+  return 8;
+}
+
+GCH_CPP14_CONSTEXPR
+void
+test_struct_func_void (test_struct&) { }
+
+GCH_CPP14_CONSTEXPR
+void
+test_struct_func_void (const test_struct&) { }
+
+int
+test_struct_base_func (test_struct_base&)
+{
+  return 9;
+}
+
+constexpr
+int
+test_struct_base_func (const test_struct_base&)
+{
+  return 10;
+}
+
+GCH_CPP14_CONSTEXPR
+void
+test_struct_base_func_void (test_struct_base&) { }
+
+GCH_CPP14_CONSTEXPR
+void
+test_struct_base_func_void (const test_struct_base&) { }
+
+constexpr
+int
+test_struct_no_overload (const test_struct&)
+{
+  return 12;
+}
+
+void test_bind (void)
+{
+  print_test_header ("test bind functions");
+
+  test_struct       ts;
+  const test_struct cts;
+
+  optional_ref<test_struct>       opt  { ts  };
+  optional_ref<const test_struct> copt { cts };
+
+  static_assert (std::is_same_v<
+    typename maybe_invoke_result<gch::optional_ref<test_struct>, int (test_struct::*)()>::type,
+    int>);
+
+
+  assert ((opt >>= &test_struct::f)      == ts.f ());
+  assert ((opt >>= &test_struct::g)      == ts.g ());
+  assert ((opt >>= &test_struct_base::g) == ts.g ());
+  assert ((opt >>= &test_struct::h)      == ts.h ());
+
+  assert ((opt >>= &test_struct::m)      == ts.m);
+  assert ((opt >>= &test_struct::n)      == ts.n);
+  assert ((opt >>= &test_struct_base::n) == ts.n);
+
+  opt >>= &test_struct::fv;
+  assert ((opt >>= &test_struct::fv_val) == ts.f ());
+
+  opt >>= &test_struct::gv;
+  assert ((opt >>= &test_struct::gv_val) == ts.g ());
+
+  assert ((copt >>= &test_struct::f)      == cts.f ());
+  assert ((copt >>= &test_struct::g)      == cts.g ());
+  assert ((copt >>= &test_struct_base::g) == cts.g ());
+  assert ((copt >>= &test_struct::h)      == cts.h ());
+
+  assert ((copt >>= &test_struct::m)      == cts.m);
+  assert ((copt >>= &test_struct::n)      == cts.n);
+  assert ((copt >>= &test_struct_base::n) == cts.n);
+
+  copt >>= &test_struct::fv;
+  copt >>= &test_struct::gv;
+  copt >>= &test_struct_base::gv;
+
+#ifndef GCH_CLANG
+  assert ((opt >>= test_struct_func)        == test_struct_func (ts));
+#endif
+  assert ((opt >>= test_struct_no_overload) == test_struct_no_overload (ts));
+
+  opt >>= test_struct_func_void;
+
+#ifndef GCH_CLANG
+  assert ((copt >>= test_struct_func)        == test_struct_func (cts));
+#endif
+  assert ((copt >>= test_struct_no_overload) == test_struct_no_overload (cts));
+
+  copt >>= test_struct_func_void;
+
+  print_test_footer ();
+}
+
 int main (void)
 {
   static_cast<void> (g_rx);
@@ -741,5 +922,6 @@ int main (void)
   // test_perf_equality ();
   test_pointer_cast ();
   test_incomplete ();
+  test_bind ();
   return 0;
 }

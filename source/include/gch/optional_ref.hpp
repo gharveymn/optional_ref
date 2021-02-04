@@ -16,6 +16,9 @@
 #include <utility>
 
 #ifdef __clang__
+#  ifndef GCH_CLANG
+#    define GCH_CLANG
+#  endif
 #  if defined (__cplusplus) && __cplusplus >= 201703L
 #    ifndef GCH_CLANG_17
 #      define GCH_CLANG_17
@@ -101,6 +104,12 @@
 #        define GCH_LIB_THREE_WAY_COMPARISON
 #      endif
 #    endif
+#  endif
+#endif
+
+#if defined (__cpp_variable_templates) && __cpp_variable_templates >= 201304
+#  ifndef GCH_VARIABLE_TEMPLATES
+#    define GCH_VARIABLE_TEMPLATES
 #  endif
 #endif
 
@@ -1468,6 +1477,361 @@ namespace gch
    */
   template <typename T>
   using optional_cref = optional_ref<const T>;
+
+  namespace detail
+  {
+
+    template <typename T, typename Type, typename Base, typename ...Args>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
+                             &&  std::is_object<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value
+                             &&  std::is_default_constructible<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value,
+                                 decltype (((*opt).*f) (std::forward<Args> (args)...))>::type
+    {
+      using ret_type = decltype (((*opt).*f) (std::forward<Args> (args)...));
+      return opt ? ((*opt).*f) (std::forward<Args> (args)...) : ret_type ();
+    }
+
+    template <typename T, typename Type, typename Base, typename ...Args>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
+                             &&! std::is_object<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value
+                             &&  std::is_lvalue_reference<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value,
+                                 optional_ref<typename std::remove_reference<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::type>>::type
+    {
+      using ret_type = decltype (make_optional_ref (((*opt).*f) (std::forward<Args> (args)...)));
+      return opt ? make_optional_ref (((*opt).*f) (std::forward<Args> (args)...)) : ret_type ();
+    }
+
+    template <typename T, typename Type, typename Base, typename ...Args>
+    inline GCH_CPP14_CONSTEXPR
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
+                             &&! std::is_object<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value
+                             &&! std::is_lvalue_reference<decltype (
+                                   ((*opt).*f) (std::forward<Args> (args)...))>::value,
+                                 void>::type
+    {
+      if (opt)
+        ((*opt).*f) (std::forward<Args> (args)...);
+    }
+
+    template <typename T, typename Type, typename Base>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* m)
+      -> typename std::enable_if<std::is_member_object_pointer<decltype (m)>::value
+                             &&! std::is_lvalue_reference<Type>::value
+                             &&  std::is_default_constructible<Type>::value,
+                                 Type>::type
+    {
+      return opt ? (*opt).*m : Type ();
+    }
+
+    template <typename T, typename Type, typename Base>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* m)
+      -> typename std::enable_if<std::is_member_object_pointer<decltype (m)>::value
+                             &&  std::is_lvalue_reference<Type>::value,
+                                 decltype (make_optional_ref ((*opt).*m))>::type
+    {
+      return opt ? make_optional_ref ((*opt).*m)
+                 : optional_ref<typename std::remove_reference<Type>::type> { };
+    }
+
+    template <typename T, typename Functor, typename ...Args>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      -> typename std::enable_if<
+               std::is_object<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
+           &&  std::is_default_constructible<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value,
+               decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::type
+    {
+      using ret_type = decltype (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...));
+      return opt ? std::forward<Functor> (f) (*opt, std::forward<Args> (args)...) : ret_type ();
+    }
+
+    template <typename T, typename Functor, typename ...Args>
+    constexpr
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      -> typename std::enable_if<
+             ! std::is_object<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
+           &&  std::is_lvalue_reference<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value,
+               optional_ref<typename std::remove_reference<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::type>>::type
+    {
+      using ref = decltype (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...));
+      static_assert (std::is_lvalue_reference<ref>::value, "`ref` should be an lvalue reference.");
+      using ret_type = optional_ref<typename std::remove_reference<ref>::type>;
+
+      return opt ? ret_type (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))
+                 : ret_type ();
+    }
+
+    template <typename T, typename Functor, typename ...Args>
+    inline GCH_CPP14_CONSTEXPR
+    auto
+    maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      -> typename std::enable_if<
+             ! std::is_object<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
+           &&! std::is_lvalue_reference<decltype (
+                 std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value,
+               void>::type
+    {
+      if (opt)
+        std::forward<Functor> (f) (*opt, std::forward<Args> (args)...);
+    }
+
+    template <typename Void, typename Optional, typename Functor, typename ...Args>
+    struct maybe_invoke_result_optional_ref
+    { };
+
+    template <typename T, typename Functor, typename ...Args>
+    struct maybe_invoke_result_optional_ref<
+      decltype (static_cast<void> (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                              std::declval<Functor> (),
+                                                              std::declval<Args> ()...))),
+      optional_ref<T>, Functor, Args...>
+    {
+      using type = decltype (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                        std::declval<Functor> (),
+                                                        std::declval<Args> ()...));
+    };
+
+    template <typename Void, typename Optional, typename Functor, typename ...Args>
+    struct is_maybe_invocable_optional_ref
+      : std::false_type
+    { };
+
+    template <typename T, typename Functor, typename ...Args>
+    struct is_maybe_invocable_optional_ref<
+          decltype (static_cast<void> (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                                  std::declval<Functor> (),
+                                                                  std::declval<Args> ()...))),
+          optional_ref<T>, Functor, Args...>
+      : std::true_type
+    { };
+
+  }
+
+  template <typename Optional, typename Functor, typename ...Args>
+  struct maybe_invoke_result;
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>, Functor, Args...>
+    : detail::maybe_invoke_result_optional_ref<void, optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<const optional_ref<T>&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>&&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<const optional_ref<T>&&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename Optional, typename Functor, typename ...Args>
+  using maybe_invoke_result_t = typename maybe_invoke_result<Optional, Functor, Args...>::type;
+
+  template <typename Optional, typename Functor, typename ...Args>
+  struct is_maybe_invocable;
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_maybe_invocable<optional_ref<T>, Functor, Args...>
+    : detail::is_maybe_invocable_optional_ref<void, optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_maybe_invocable<optional_ref<T>&, Functor, Args...>
+    : is_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_maybe_invocable<const optional_ref<T>&, Functor, Args...>
+    : is_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_maybe_invocable<optional_ref<T>&&, Functor, Args...>
+    : is_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_maybe_invocable<const optional_ref<T>&&, Functor, Args...>
+    : is_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+#ifdef GCH_VARIABLE_TEMPLATES
+
+  template <typename Optional, typename Functor, typename ...Args>
+  GCH_INLINE_VAR constexpr
+  bool
+  is_maybe_invocable_v = is_maybe_invocable<Optional, Functor, Args...>::value;
+
+#endif
+
+  /**
+   * Invokes a functor on the optional if and only if it has a value.
+   *
+   * On the return type:
+   *   let `U = std::invoke_result_t<Functor, T&, Args...>`
+   *   if `U` is
+   *     -     object and     default constructible -> `U`
+   *     -     object and not default constructible -> <ill-formed>
+   *     - not object and     lvalue reference      -> `optional_ref<std::remove_reference_t<U>>`
+   *     - not object and not lvalue reference      -> `void`
+   *
+   * In the case that U is an object and default constructible, the intent
+   * is that U is either a `std::optional` or `optional_ref`. In this case,
+   * a default constructed value of `U` is returned if `opt` has no value.
+   *
+   * The functor may be a free function pointer, a pointer to member function,
+   * a pointer to member object, or a function object.
+   *
+   *
+   * @tparam T the value type of an `optional_ref`
+   * @tparam Functor a functor
+   * @tparam Args argument types passed to the function
+   * @param opt an `optional_ref`
+   * @param f a functor to be invoked
+   * @param args arguments passed to the function
+   * @return see above
+   */
+  template <typename T, typename Functor, typename ...Args>
+  typename std::enable_if<is_maybe_invocable<optional_ref<T>, Functor, Args...>::value,
+                          maybe_invoke_result_t<optional_ref<T>, Functor, Args...>>::type
+  maybe_invoke (optional_ref<T> opt, Functor&& f, Args&&... args)
+  {
+    return detail::maybe_invoke_optional_ref (opt,
+                                              std::forward<Functor> (f),
+                                              std::forward<Args> (args)...);
+  }
+
+  /**
+   * Calls maybe_invoke with the specified function.
+   *
+   * @tparam T the value type of an `optional_ref`
+   * @tparam Functor a functor
+   * @param opt an `optional_ref`
+   * @param f a functor to be invoked
+   * @return the result of the call to `maybe_invoke`
+   *
+   * @see gch::maybe_invoke
+   */
+  template <typename T, typename Functor,
+            typename = typename std::enable_if<
+              is_maybe_invocable<optional_ref<T>, Functor>::value>::type>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Functor>
+  operator>>= (optional_ref<T> opt, Functor&& f)
+  {
+    return maybe_invoke (opt, std::forward<Functor> (f));
+  }
+
+  template <typename T,
+            typename = typename std::enable_if<
+              is_maybe_invocable<optional_ref<T>, void (*) (T&)>::value>::type>
+  inline GCH_CPP14_CONSTEXPR
+  void
+  operator>>= (optional_ref<T> opt, void (* f) (T&))
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  // FIXME: I think that by temp.deduct.type-(5.5.1) this
+  //        is defined to be ill-formed for overloaded
+  //        functions because of the deduction for Return
+  //        performed by the second argument. However,
+  //        using it like this does work on GCC and MSVC.
+  template <typename T, typename Return,
+            typename = typename std::enable_if<
+              is_maybe_invocable<optional_ref<T>, Return (*) (T&)>::value>::type>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (*) (T&)>
+  operator>>= (optional_ref<T> opt, Return (* f) (T&))
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void)>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&! std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void)>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void))
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) &>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&! std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) &>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) &)
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) const>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&  std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) const>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) const)
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) const &>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&  std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) const &>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) const &)
+  {
+    return maybe_invoke (opt, f);
+  }
 
 }
 
