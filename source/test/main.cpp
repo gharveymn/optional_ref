@@ -113,18 +113,18 @@ void test_const (void)
   assert (rx != rz);
 
   // set rz
-  rz = z;
+  rz = &z;
 
   assert (rx != rz);
   assert (rx.get_pointer () != rz.get_pointer ());
 
   // set rz with a non-const reference
-  rz = y;
+  rz.emplace (y);
 
   assert (rx != rz);
   assert (rx.get_pointer () != rz.get_pointer ());
 
-  rz = x;
+  rz.emplace (x);
 
   assert (rx == rz);
   assert (rx.get_pointer () == rz.get_pointer ());
@@ -196,14 +196,14 @@ void test_nullopt (void)
 
   int x = 1;
   int y = 2;
-  r0 = x;
+  r0 = &x;
   assert (r0.has_value ());
   static_cast<void> (y);
 
-  r1 = x;
+  r1.emplace (x);
   assert (r1.has_value ());
 
-  r2 = x;
+  r2.emplace (x);
   assert (r2.has_value ());
 
   assert (r0.value () == x);
@@ -250,7 +250,7 @@ void test_inheritence (void)
   my_struct s0 { };
   my_struct s1 { };
   s1.x = 1;
-  const optional_ref<my_struct_base> r0 = s0;
+  const optional_ref<my_struct_base> r0 = &s0;
   const optional_ref<my_struct> r1 (s1);
 
   assert (r0 != r1);
@@ -522,9 +522,9 @@ void test_hash (void)
   map.emplace (y, &ys);
   map.emplace (z, &zs);
 
-  assert (&xs == map[x]);
-  assert (&ys == map[y]);
-  assert (&zs == map[z]);
+  assert (&xs == map[&x]);
+  assert (&ys == map[&y]);
+  assert (&zs == map[&z]);
 
   print_test_footer ();
 }
@@ -586,8 +586,8 @@ double test_perf_equality_worker (void)
   optional_ref<double> r;
   for (auto i = 0; i < num; ++i)
   {
-    l = v[dist (gen)];
-    r = v[dist (gen)];
+    l.emplace (v[dist (gen)]);
+    r.emplace (v[dist (gen)]);
     static_cast<void> (l == r);
     static_cast<void> (l != r);
     static_cast<void> (l <  r);
@@ -775,7 +775,6 @@ struct test_struct
     return 11;
   }
 
-  constexpr
   int&
   r (void)
   {
@@ -854,34 +853,29 @@ void test_bind (void)
   optional_ref<test_struct>       opt  { ts  };
   optional_ref<const test_struct> copt { cts };
 
-  static_assert (std::is_same_v<
-    typename maybe_invoke_result<gch::optional_ref<test_struct>, int (test_struct::*)()>::type,
-    int>);
-
-
   assert ((opt >>= &test_struct::f)      == ts.f ());
   assert ((opt >>= &test_struct::g)      == ts.g ());
   assert ((opt >>= &test_struct_base::g) == ts.g ());
   assert ((opt >>= &test_struct::h)      == ts.h ());
 
-  assert ((opt >>= &test_struct::m)      == ts.m);
-  assert ((opt >>= &test_struct::n)      == ts.n);
-  assert ((opt >>= &test_struct_base::n) == ts.n);
+  assert ((opt >>= &test_struct::m)      == &ts.m);
+  assert ((opt >>= &test_struct::n)      == &ts.n);
+  assert ((opt >>= &test_struct_base::n) == &ts.n);
 
   opt >>= &test_struct::fv;
-  assert ((opt >>= &test_struct::fv_val) == ts.f ());
+  assert (*(opt >>= &test_struct::fv_val) == ts.f ());
 
   opt >>= &test_struct::gv;
-  assert ((opt >>= &test_struct::gv_val) == ts.g ());
+  assert (*(opt >>= &test_struct::gv_val) == ts.g ());
 
   assert ((copt >>= &test_struct::f)      == cts.f ());
   assert ((copt >>= &test_struct::g)      == cts.g ());
   assert ((copt >>= &test_struct_base::g) == cts.g ());
   assert ((copt >>= &test_struct::h)      == cts.h ());
 
-  assert ((copt >>= &test_struct::m)      == cts.m);
-  assert ((copt >>= &test_struct::n)      == cts.n);
-  assert ((copt >>= &test_struct_base::n) == cts.n);
+  assert ((copt >>= &test_struct::m)      == &cts.m);
+  assert ((copt >>= &test_struct::n)      == &cts.n);
+  assert ((copt >>= &test_struct_base::n) == &cts.n);
 
   copt >>= &test_struct::fv;
   copt >>= &test_struct::gv;
@@ -900,6 +894,8 @@ void test_bind (void)
   assert ((copt >>= test_struct_no_overload) == test_struct_no_overload (cts));
 
   copt >>= test_struct_func_void;
+
+  opt >> [] { assert (1 == 1); };
 
   print_test_footer ();
 }
