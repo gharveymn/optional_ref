@@ -14,7 +14,7 @@ using namespace gch;
 struct base { };
 struct derived : base { };
 
-// these cause ICE with MSVC for some reason
+// these cause an ICE with MSVC for some reason
 #ifndef _MSC_VER
 
 template class gch::optional_ref<int>;
@@ -33,14 +33,14 @@ template bool gch::optional_ref<base>::contains (derived&) const;
 
 #endif
 
-template bool gch::operator== (const optional_ref<int>&, const optional_ref<int>&) noexcept;
-template bool gch::operator!= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
-template bool gch::operator<  (const optional_ref<int>&, const optional_ref<int>&) noexcept;
-template bool gch::operator>  (const optional_ref<int>&, const optional_ref<int>&) noexcept;
-template bool gch::operator<= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
-template bool gch::operator>= (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template bool gch::operator== (const optional_ref<int>&, const optional_ref<int>&);
+template bool gch::operator!= (const optional_ref<int>&, const optional_ref<int>&);
+template bool gch::operator<  (const optional_ref<int>&, const optional_ref<int>&);
+template bool gch::operator>  (const optional_ref<int>&, const optional_ref<int>&);
+template bool gch::operator<= (const optional_ref<int>&, const optional_ref<int>&);
+template bool gch::operator>= (const optional_ref<int>&, const optional_ref<int>&);
 #ifdef GCH_LIB_THREE_WAY_COMPARISON
-template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const optional_ref<int>&) noexcept;
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const optional_ref<int>&);
 #endif
 
 template bool gch::operator== (const optional_ref<int>&, nullopt_t) noexcept;
@@ -64,16 +64,16 @@ template bool gch::operator== (const optional_ref<int>&, const int *            
 template bool gch::operator== (const int *,              const optional_ref<int>&) noexcept;
 template bool gch::operator!= (const optional_ref<int>&, const int *             ) noexcept;
 template bool gch::operator!= (const int *,              const optional_ref<int>&) noexcept;
-template bool gch::operator<  (const optional_ref<int>&, const int *             ) noexcept;
-template bool gch::operator<  (const int *,              const optional_ref<int>&) noexcept;
-template bool gch::operator>  (const optional_ref<int>&, const int *             ) noexcept;
-template bool gch::operator>  (const int *,              const optional_ref<int>&) noexcept;
-template bool gch::operator<= (const optional_ref<int>&, const int *             ) noexcept;
-template bool gch::operator<= (const int *,              const optional_ref<int>&) noexcept;
-template bool gch::operator>= (const optional_ref<int>&, const int *             ) noexcept;
-template bool gch::operator>= (const int *,              const optional_ref<int>&) noexcept;
+template bool gch::operator<  (const optional_ref<int>&, const int *             );
+template bool gch::operator<  (const int *,              const optional_ref<int>&);
+template bool gch::operator>  (const optional_ref<int>&, const int *             );
+template bool gch::operator>  (const int *,              const optional_ref<int>&);
+template bool gch::operator<= (const optional_ref<int>&, const int *             );
+template bool gch::operator<= (const int *,              const optional_ref<int>&);
+template bool gch::operator>= (const optional_ref<int>&, const int *             );
+template bool gch::operator>= (const int *,              const optional_ref<int>&);
 #ifdef GCH_LIB_THREE_WAY_COMPARISON
-template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const int *) noexcept;
+template std::strong_ordering gch::operator<=> (const optional_ref<int>&, const int *);
 #endif
 
 static_assert (std::is_trivially_copy_constructible<optional_ref<int>>::value, "");
