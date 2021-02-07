@@ -709,9 +709,10 @@ namespace gch
   GCH_NODISCARD constexpr
   bool
   operator< (const optional_ref<T>& lhs, const optional_ref<U>& rhs)
-    noexcept (noexcept (std::less<typename std::common_type<
-      typename optional_ref<T>::pointer,
-      typename optional_ref<U>::pointer>::type> { } (lhs.get_pointer (), rhs.get_pointer ())))
+    noexcept (noexcept (
+      std::less<typename std::common_type<typename optional_ref<T>::pointer,
+                                          typename optional_ref<U>::pointer>::type> { } (
+        lhs.get_pointer (), rhs.get_pointer ())))
   {
     using common_ty = typename std::common_type<typename optional_ref<T>::pointer,
                                                 typename optional_ref<U>::pointer>::type;
@@ -1200,8 +1201,9 @@ namespace gch
   GCH_NODISCARD constexpr
   bool
   operator< (const optional_ref<T>& lhs, U *rhs)
-    noexcept (noexcept (std::less<typename std::common_type<
-      typename optional_ref<T>::pointer, U *>::type> { } (lhs.get_pointer (), rhs)))
+    noexcept (noexcept (
+      std::less<typename std::common_type<typename optional_ref<T>::pointer, U *>::type> { } (
+        lhs.get_pointer (), rhs)))
   {
     using common_ty = typename std::common_type<typename optional_ref<T>::pointer, U *>::type;
     return (! lhs.has_value () || std::less<common_ty> { } (lhs.get_pointer (), rhs));
@@ -1224,8 +1226,9 @@ namespace gch
   GCH_NODISCARD constexpr
   bool
   operator< (U *lhs, const optional_ref<T>& rhs)
-  noexcept (noexcept (std::less<typename std::common_type<
-    U *, typename optional_ref<T>::pointer>::type> { } (lhs, rhs.get_pointer ())))
+  noexcept (noexcept (
+    std::less<typename std::common_type<U *, typename optional_ref<T>::pointer>::type> { } (
+      lhs, rhs.get_pointer ())))
   {
     using common_ty = typename std::common_type<U *, typename optional_ref<T>::pointer>::type;
     return (rhs.has_value () && std::less<common_ty> { } (lhs, rhs.get_pointer ()));
