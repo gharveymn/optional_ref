@@ -843,6 +843,12 @@ test_struct_no_overload (const test_struct&)
   return 12;
 }
 
+std::size_t
+test_struct_args (const test_struct&, const std::string& s)
+{
+  return s.size ();
+}
+
 void test_bind (void)
 {
   print_test_header ("test bind functions");
@@ -896,6 +902,8 @@ void test_bind (void)
   copt >>= test_struct_func_void;
 
   opt >> [] { assert (1 == 1); };
+
+  assert (maybe_invoke (opt, test_struct_args, "hi") == 2);
 
   print_test_footer ();
 }

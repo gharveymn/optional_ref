@@ -1701,9 +1701,10 @@ namespace gch
    * @param args arguments passed to the function
    * @return [see above]
    */
-  template <typename T, typename Functor, typename ...Args>
-  typename std::enable_if<is_maybe_invocable<optional_ref<T>, Functor, Args...>::value,
-                          maybe_invoke_result_t<optional_ref<T>, Functor, Args...>>::type
+  template <typename T, typename Functor, typename ...Args,
+            typename std::enable_if<
+              is_maybe_invocable<optional_ref<T>, Functor, Args...>::value>::type * = nullptr>
+  maybe_invoke_result_t<optional_ref<T>, Functor, Args...>
   maybe_invoke (optional_ref<T> opt, Functor&& f, Args&&... args)
   {
     return detail::maybe_invoke_optional_ref (opt,
@@ -1840,6 +1841,61 @@ namespace gch
     // make sure that the return is forwarded and not copied
     using ret_type = decltype (std::forward<Functor> (f) ());
     return opt >>= [&f](T&) -> ret_type { return std::forward<Functor> (f) (); };
+  }
+
+  // FIXME: Is this a good name? Perhaps `maybe_dycast` would be better?
+  //        `dynamic_cast` is the only cast that really makes sense there though
+  template <typename T, typename U>
+  inline
+  optional_ref<T>
+  maybe_cast (U *ptr) noexcept
+  {
+    return { dynamic_cast<T *> (ptr) };
+  }
+
+  template <typename T, typename U>
+  inline
+  optional_ref<const T>
+  maybe_cast (const U *ptr) noexcept
+  {
+    return { dynamic_cast<const T *> (ptr) };
+  }
+
+  // NOTE: there is no use case of `U = S *` because `S *` cannot
+  //       be a polymorphic object, so the above cases are fine.
+  template <typename T, typename U>
+  inline
+  optional_ref<T>
+  maybe_cast (U& ref) noexcept
+  {
+    return maybe_cast<T> (&ref);
+  }
+
+  template <typename T, typename U>
+  inline
+  optional_ref<const T>
+  maybe_cast (const U& ref) noexcept
+  {
+    return maybe_cast<T> (&ref);
+  }
+
+  template <typename T, typename U>
+  void maybe_cast (const U&& ref) = delete;
+
+  template <typename T, typename U>
+  inline
+  optional_ref<T>
+  maybe_cast (optional_ref<U> opt) noexcept
+  {
+    return maybe_cast<T> (opt.get_pointer ());
+  }
+
+  template <typename T, typename U>
+  inline
+  optional_ref<const T>
+  maybe_cast (optional_ref<const U> opt) noexcept
+  {
+    return maybe_cast<T> (opt.get_pointer ());
   }
 
 }
