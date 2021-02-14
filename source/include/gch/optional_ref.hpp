@@ -378,7 +378,6 @@ namespace gch
      * The pointer is the internal representation of the reference.
      * This function never fails.
      *
-     *
      * @return a pointer representation of the reference.
      */
     GCH_NODISCARD constexpr
