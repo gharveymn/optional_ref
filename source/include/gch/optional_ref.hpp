@@ -87,6 +87,14 @@
 #  endif
 #endif
 
+#ifndef GCH_IMPLICIT_CONVERSION
+#  if defined (__cpp_conditional_explicit) && __cpp_conditional_explicit >= 201806
+#    define GCH_IMPLICIT_CONVERSION explicit (false)
+#  else
+#    define GCH_IMPLICIT_CONVERSION /* implicit */
+#  endif
+#endif
+
 #if defined (__cpp_deduction_guides) && __cpp_deduction_guides >= 201703
 #  ifndef GCH_CTAD_SUPPORT
 #    define GCH_CTAD_SUPPORT
@@ -129,7 +137,7 @@ namespace gch
     nullopt_t (create_tag) noexcept
     { }
 
-    constexpr /* implicit */
+    constexpr GCH_IMPLICIT_CONVERSION
     nullopt_t (std::nullptr_t) noexcept
     { }
   };
@@ -269,7 +277,7 @@ namespace gch
      * A constructor to implicitly convert nullopt_t so we can
      * use syntax like `optional_ref<int> x = nullopt`.
      */
-    constexpr /* implicit */
+    constexpr GCH_IMPLICIT_CONVERSION
     optional_ref (nullopt_t) noexcept
     { };
 
@@ -287,7 +295,7 @@ namespace gch
     template <typename Ptr,
               typename std::enable_if<std::is_constructible<pointer, Ptr>::value
                                   &&  std::is_convertible<Ptr, pointer>::value>::type * = nullptr>
-    constexpr /* implicit */
+    constexpr GCH_IMPLICIT_CONVERSION
     optional_ref (Ptr&& ptr) noexcept
       : m_ptr (std::forward<Ptr> (ptr))
     { }
@@ -349,7 +357,7 @@ namespace gch
     template <typename U,
               typename std::enable_if<std::is_constructible<pointer, U *>::value &&
                                       std::is_convertible<U *, pointer>::value>::type * = nullptr>
-    constexpr /* implicit */
+    constexpr GCH_IMPLICIT_CONVERSION
     optional_ref (const optional_ref<U>& other) noexcept
       : m_ptr (other.get_pointer ())
     { }
