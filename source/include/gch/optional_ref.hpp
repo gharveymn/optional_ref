@@ -279,7 +279,7 @@ namespace gch
      */
     constexpr GCH_IMPLICIT_CONVERSION
     optional_ref (nullopt_t) noexcept
-    { };
+    { }
 
     /**
      * Constructor
@@ -289,7 +289,7 @@ namespace gch
      * need to dereference or inspect pointers before
      * creation; we can just use the pointer directly.
      *
-     * @tparam U a type implicitly convertible to `pointer`.
+     * @tparam Ptr a type implicitly convertible to `pointer`.
      * @param ptr a pointer.
      */
     template <typename Ptr,
@@ -369,8 +369,8 @@ namespace gch
      * where `pointer` is explicitly constructible from `U *`.
      *
      * @tparam U a referenced value type.
-     * @param ref an optional_ref which contains a pointer from
-     *            which `pointer` may be explicitly constructed.
+     * @param other an optional_ref which contains a pointer from
+     *              which `pointer` may be explicitly constructed.
      */
     template <typename U,
               typename std::enable_if<std::is_constructible<pointer, U *>::value
@@ -552,8 +552,8 @@ namespace gch
      *
      * Internally, sets the pointer to the argument pointer.
      *
-     * @tparam U a reference type where `pointer` is explicitly constructible from its pointer.
-     * @param ref an lvalue reference.
+     * @tparam Ptr a type explicitly convertible to `pointer`.
+     * @param ptr a pointer.
      * @return the contained reference.
      */
     template <typename Ptr,
@@ -844,7 +844,6 @@ namespace gch
    *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the equality comparison.
    *
    * @see std::optional::operator==
@@ -866,7 +865,6 @@ namespace gch
    *
    * @tparam T the value type of `rhs`.
    * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the three-way comparison.
    *
    * @see std::optional::operator<=>
@@ -887,7 +885,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
    * @param rhs an `optional_ref`.
    * @return the result of the equality comparison.
    *
@@ -908,7 +905,6 @@ namespace gch
    *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the inequality comparison.
    *
    * @see std::optional::operator!=
@@ -927,7 +923,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
    * @param rhs an `optional_ref`.
    * @return the result of the inequality comparison.
    *
@@ -947,8 +942,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `lhs`.
-   * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the less-than comparison.
    *
    * @see std::optional::operator<
@@ -967,8 +960,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
-   * @param rhs an `optional_ref`.
    * @return the result of the less-than comparison.
    *
    * @see std::optional::operator<
@@ -987,8 +978,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `lhs`.
-   * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the greater-than-equal comparison.
    *
    * @see std::optional::operator>=
@@ -1007,7 +996,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
    * @param rhs an `optional_ref`.
    * @return the result of the greater-than-equal comparison.
    *
@@ -1028,7 +1016,6 @@ namespace gch
    *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the greater-than comparison.
    *
    * @see std::optional::operator>
@@ -1047,8 +1034,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
-   * @param rhs an `optional_ref`.
    * @return the result of the greater-than comparison.
    *
    * @see std::optional::operator>
@@ -1068,7 +1053,6 @@ namespace gch
    *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
-   * @param rhs a `nullopt_t`.
    * @return the result of the less-than-equal comparison.
    *
    * @see std::optional::operator<=
@@ -1087,8 +1071,6 @@ namespace gch
    * We compare by address, not by value.
    *
    * @tparam T the value type of `rhs`.
-   * @param lhs a `nullopt_t`.
-   * @param rhs an `optional_ref`.
    * @return the result of the less-than-equal comparison.
    *
    * @see std::optional::operator<=
@@ -1454,7 +1436,7 @@ namespace gch
    * Creates an `optional_ref` with the specified argument.
    *
    * @tparam U a value type.
-   * @param ref a pointer.
+   * @param ptr a pointer.
    * @return an `optional_ref<U>` created from the argument.
    *
    * @see std::make_optional
