@@ -79,11 +79,11 @@
 #  endif
 #endif
 
-#ifndef GCH_INLINE_VAR
+#ifndef GCH_INLINE_VARIABLE
 #  if defined (__cpp_inline_variables) && __cpp_inline_variables >= 201606
-#    define GCH_INLINE_VAR inline
+#    define GCH_INLINE_VARIABLE inline
 #  else
-#    define GCH_INLINE_VAR
+#    define GCH_INLINE_VARIABLE
 #  endif
 #endif
 
@@ -142,7 +142,7 @@ namespace gch
     { }
   };
 
-  GCH_INLINE_VAR constexpr nullopt_t nullopt { nullopt_t::create };
+  GCH_INLINE_VARIABLE constexpr nullopt_t nullopt { nullopt_t::create };
 
   /**
    * An exception class for cases of bad access
@@ -1474,6 +1474,7 @@ namespace gch
     constexpr
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      noexcept (noexcept (((*opt).*f) (std::forward<Args> (args)...)))
       -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
                              &&  std::is_object<decltype (
                                    ((*opt).*f) (std::forward<Args> (args)...))>::value
@@ -1489,6 +1490,7 @@ namespace gch
     constexpr
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      noexcept (noexcept (((*opt).*f) (std::forward<Args> (args)...)))
       -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
                              &&! std::is_object<decltype (
                                    ((*opt).*f) (std::forward<Args> (args)...))>::value
@@ -1506,6 +1508,7 @@ namespace gch
     inline GCH_CPP14_CONSTEXPR
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* f, Args&&... args)
+      noexcept (noexcept (((*opt).*f) (std::forward<Args> (args)...)))
       -> typename std::enable_if<std::is_member_function_pointer<decltype (f)>::value
                              &&! std::is_object<decltype (
                                    ((*opt).*f) (std::forward<Args> (args)...))>::value
@@ -1521,6 +1524,7 @@ namespace gch
     constexpr
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Type Base::* m)
+      noexcept (noexcept ((*opt).*m))
       -> typename std::enable_if<std::is_member_object_pointer<decltype (m)>::value,
                                  optional_ref<typename std::remove_reference<decltype (
                                    (*opt).*m)>::type>>::type
@@ -1534,6 +1538,7 @@ namespace gch
     constexpr
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      noexcept (noexcept (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...)))
       -> typename std::enable_if<
                std::is_object<decltype (
                  std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
@@ -1550,6 +1555,7 @@ namespace gch
     constexpr
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      noexcept (noexcept (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...)))
       -> typename std::enable_if<
              ! std::is_object<decltype (
                  std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
@@ -1569,6 +1575,7 @@ namespace gch
     inline GCH_CPP14_CONSTEXPR
     auto
     maybe_invoke_optional_ref (optional_ref<T> opt, Functor&& f, Args&&... args)
+      noexcept (noexcept (std::forward<Functor> (f) (*opt, std::forward<Args> (args)...)))
       -> typename std::enable_if<
              ! std::is_object<decltype (
                  std::forward<Functor> (f) (*opt, std::forward<Args> (args)...))>::value
@@ -1599,7 +1606,9 @@ namespace gch
     template <typename Void, typename Optional, typename Functor, typename ...Args>
     struct is_maybe_invocable_optional_ref
       : std::false_type
-    { };
+    {
+      using nothrow = std::false_type;
+    };
 
     template <typename T, typename Functor, typename ...Args>
     struct is_maybe_invocable_optional_ref<
@@ -1608,7 +1617,12 @@ namespace gch
                                                                   std::declval<Args> ()...))),
           optional_ref<T>, Functor, Args...>
       : std::true_type
-    { };
+    {
+      using nothrow = std::integral_constant<bool,
+                        noexcept (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                             std::declval<Functor> (),
+                                                             std::declval<Args> ()...))>;
+    };
 
   }
 
@@ -1671,12 +1685,45 @@ namespace gch
     : is_maybe_invocable<optional_ref<T>, Functor, Args...>
   { };
 
+  template <typename Optional, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable;
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
+    : detail::is_maybe_invocable_optional_ref<void, optional_ref<T>, Functor, Args...>::nothrow
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable<optional_ref<T>&, Functor, Args...>
+    : is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable<const optional_ref<T>&, Functor, Args...>
+    : is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable<optional_ref<T>&&, Functor, Args...>
+    : is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable<const optional_ref<T>&&, Functor, Args...>
+    : is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
+  { };
+
 #ifdef GCH_VARIABLE_TEMPLATES
 
   template <typename Optional, typename Functor, typename ...Args>
-  GCH_INLINE_VAR constexpr
+  GCH_INLINE_VARIABLE constexpr
   bool
   is_maybe_invocable_v = is_maybe_invocable<Optional, Functor, Args...>::value;
+
+  template <typename Optional, typename Functor, typename ...Args>
+  GCH_INLINE_VARIABLE constexpr
+  bool
+    is_nothrow_maybe_invocable_v = is_nothrow_maybe_invocable<Optional, Functor, Args...>::value;
 
 #endif
 
@@ -1711,8 +1758,10 @@ namespace gch
   template <typename T, typename Functor, typename ...Args,
             typename std::enable_if<
               is_maybe_invocable<optional_ref<T>, Functor, Args...>::value>::type * = nullptr>
+  constexpr
   maybe_invoke_result_t<optional_ref<T>, Functor, Args...>
   maybe_invoke (optional_ref<T> opt, Functor&& f, Args&&... args)
+    noexcept (is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>::value)
   {
     return detail::maybe_invoke_optional_ref (opt,
                                               std::forward<Functor> (f),
@@ -1736,6 +1785,7 @@ namespace gch
   constexpr
   maybe_invoke_result_t<optional_ref<T>, Functor>
   operator>>= (optional_ref<T> opt, Functor&& f)
+    noexcept (is_nothrow_maybe_invocable<optional_ref<T>, Functor>::value)
   {
     return maybe_invoke (opt, std::forward<Functor> (f));
   }
@@ -1750,8 +1800,24 @@ namespace gch
 
   template <typename T>
   constexpr
+  maybe_invoke_result_t<optional_ref<T>, void (T&) noexcept>
+  operator>>= (optional_ref<T> opt, void f (T&) noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T>
+  constexpr
   maybe_invoke_result_t<optional_ref<T>, T (T&)>
   operator>>= (optional_ref<T> opt, T f (T&))
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, T (T&) noexcept>
+  operator>>= (optional_ref<T> opt, T f (T&) noexcept) noexcept
   {
     return maybe_invoke (opt, f);
   }
@@ -1766,8 +1832,24 @@ namespace gch
 
   template <typename T>
   constexpr
+  maybe_invoke_result_t<optional_ref<T>, T& (T&) noexcept>
+  operator>>= (optional_ref<T> opt, T& f (T&) noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T>
+  constexpr
   maybe_invoke_result_t<optional_ref<T>, optional_ref<T> (T&)>
   operator>>= (optional_ref<T> opt, optional_ref<T> f (T&))
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, optional_ref<T> (T&) noexcept>
+  operator>>= (optional_ref<T> opt, optional_ref<T> f (T&) noexcept) noexcept
   {
     return maybe_invoke (opt, f);
   }
@@ -1781,7 +1863,8 @@ namespace gch
   //        overload before deduction is performed.
   template <typename T, typename Return,
             typename std::enable_if<
-              is_maybe_invocable<optional_ref<T>, Return (T&)>::value>::type * = nullptr>
+              is_maybe_invocable<optional_ref<T>,
+                                 Return (T&)>::value>::type * = nullptr>
   constexpr
   maybe_invoke_result_t<optional_ref<T>, Return (T&)>
   operator>>= (optional_ref<T> opt, Return f (T&))
@@ -1789,9 +1872,21 @@ namespace gch
     return maybe_invoke (opt, f);
   }
 
+  template <typename T, typename Return,
+            typename std::enable_if<
+              is_maybe_invocable<optional_ref<T>,
+                                 Return (T&) noexcept>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (T&) noexcept>
+  operator>>= (optional_ref<T> opt, Return f (T&) noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
   template <typename T, typename Base, typename Return,
             typename std::enable_if<
-                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void)>::value
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void)>::value
               &&  std::is_base_of<Base, typename std::decay<T>::type>::value
               &&! std::is_const<T>::value>::type * = nullptr>
   constexpr
@@ -1803,7 +1898,21 @@ namespace gch
 
   template <typename T, typename Base, typename Return,
             typename std::enable_if<
-                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) &>::value
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) noexcept>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&! std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) noexcept>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) &>::value
               &&  std::is_base_of<Base, typename std::decay<T>::type>::value
               &&! std::is_const<T>::value>::type * = nullptr>
   constexpr
@@ -1815,7 +1924,21 @@ namespace gch
 
   template <typename T, typename Base, typename Return,
             typename std::enable_if<
-                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) const>::value
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) & noexcept>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&! std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) & noexcept>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) & noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) const>::value
               &&  std::is_base_of<Base, typename std::decay<T>::type>::value
               &&  std::is_const<T>::value>::type * = nullptr>
   constexpr
@@ -1827,12 +1950,39 @@ namespace gch
 
   template <typename T, typename Base, typename Return,
             typename std::enable_if<
-                  is_maybe_invocable<optional_ref<T>, Return (Base::*) (void) const &>::value
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) const noexcept>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&  std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) const noexcept>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) const noexcept) noexcept
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) const &>::value
               &&  std::is_base_of<Base, typename std::decay<T>::type>::value
               &&  std::is_const<T>::value>::type * = nullptr>
   constexpr
   maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) const &>
   operator>>= (optional_ref<T> opt, Return (Base::* f) (void) const &)
+  {
+    return maybe_invoke (opt, f);
+  }
+
+  template <typename T, typename Base, typename Return,
+            typename std::enable_if<
+                  is_maybe_invocable<optional_ref<T>,
+                                     Return (Base::*) (void) const & noexcept>::value
+              &&  std::is_base_of<Base, typename std::decay<T>::type>::value
+              &&  std::is_const<T>::value>::type * = nullptr>
+  constexpr
+  maybe_invoke_result_t<optional_ref<T>, Return (Base::*) (void) const & noexcept>
+  operator>>= (optional_ref<T> opt, Return (Base::* f) (void) const & noexcept) noexcept
   {
     return maybe_invoke (opt, f);
   }
@@ -1844,14 +1994,14 @@ namespace gch
   constexpr
   maybe_invoke_result_t<optional_ref<T>, decltype (std::declval<Functor> () ()) (T&)>
   operator>> (optional_ref<T> opt, Functor&& f)
+    noexcept (is_nothrow_maybe_invocable<optional_ref<T>,
+                                         decltype (std::declval<Functor> () ()) (T&)>::value)
   {
     // make sure that the return is forwarded and not copied
     using ret_type = decltype (std::forward<Functor> (f) ());
     return opt >>= [&f](T&) -> ret_type { return std::forward<Functor> (f) (); };
   }
 
-  // FIXME: Is this a good name? Perhaps `maybe_dycast` would be better?
-  //        `dynamic_cast` is the only cast that really makes sense there though
   template <typename T, typename U>
   inline
   optional_ref<T>
@@ -1905,7 +2055,7 @@ namespace gch
     return maybe_cast<T> (opt.get_pointer ());
   }
 
-}
+} // namespace gch
 
 namespace std
 {
@@ -1933,6 +2083,6 @@ namespace std
     }
   };
 
-}
+} // namespace std
 
 #endif
