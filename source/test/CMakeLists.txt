@@ -23,7 +23,7 @@ IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
   LIST (APPEND
         LINK_OPTS -fno-rtti
-                   --coverage)
+                  --coverage)
 
   IF (GCH_USE_LIBCXX_WITH_CLANG)
     LIST (APPEND
@@ -34,7 +34,7 @@ IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
     LIST (APPEND
           LINK_LIBS c++
-          c++abi)
+                    c++abi)
 
     MESSAGE (STATUS "Linking with libc++")
   ENDIF ()
