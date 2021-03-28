@@ -670,24 +670,24 @@ namespace gch
      * @return whether `*this` contains `ref`.
      */
     template <typename U,
-              typename std::enable_if<
-                std::is_constructible<const_pointer, decltype (&std::declval<U&> ())>::value
-              >::type * = nullptr>
+              typename CommonPointer = typename std::common_type<
+                pointer,
+                decltype (&std::declval<U&> ())
+              >::type>
     GCH_NODISCARD constexpr
     bool
     refers_to (U& ref) const noexcept
     {
-      return const_pointer (&ref) == m_ptr;
+      return CommonPointer (&ref) == CommonPointer (m_ptr);
     }
 
     /**
      * A deleted version for rvalue references.
      *
      * Using `refers_to` with an rvalue reference is obviously
-     * incorrectly written, so we might as well delete it.
+     * a mistake, so we might as well delete it.
      */
-    template <typename U,
-              typename std::enable_if<constructible_from_pointer_to<U>::value>::type * = nullptr>
+    template <typename U>
     bool
     refers_to (const U&&) const noexcept = delete;
 
@@ -711,29 +711,41 @@ namespace gch
      * @param cptr a pointer to be compared.
      * @return whether the stored pointer is equal to the input.
      */
+
+    /**
+     * Compares the stored pointer with another pointer.
+     *
+     * The equality comparison takes place after conversion to a common pointer type
+     *
+     * @tparam Ptr the type of a pointer to be compared.
+     * @tparam CommonPointer the common type between the stored pointer and the input.
+     * @param ptr a pointer to be compared.
+     * @return the result of the equality comparison after conversion to CommonPointer.
+     */
+    template <typename Ptr,
+              typename CommonPointer = typename std::common_type<pointer, Ptr>::type>
     GCH_NODISCARD constexpr
     bool
-    equal_pointer (const_pointer cptr) const noexcept
+    equal_pointer (Ptr&& ptr) const noexcept
     {
-      return cptr == m_ptr;
+      return CommonPointer (ptr) == CommonPointer (m_ptr);
     }
 
     /**
      * Compares the stored pointer with that of another `optional_ref`.
      *
      * @tparam U the `value_type` of another `optional_ref`.
+     * @tparam CommonPointer the common type between the stored pointers.
      * @param other another `optional_ref`.
      * @return whether the stored pointers are equal.
      */
     template <typename U,
-              typename std::enable_if<
-                    std::is_constructible<const_pointer, U *>::value
-                &&  std::is_convertible<U *, const_pointer>::value>::type * = nullptr>
+              typename CommonPointer = typename std::common_type<pointer, U *>::type>
     GCH_NODISCARD constexpr
     bool
     equal_pointer (optional_ref<U> other) const noexcept
     {
-      return equal_pointer (other.get_pointer ());
+      return CommonPointer (other.get_pointer ()) == CommonPointer (m_ptr);
     }
 
   private:
@@ -2198,7 +2210,7 @@ namespace gch
   optional_ref<T>
   maybe_cast (U *ptr) noexcept
   {
-    return { dynamic_cast<T *> (ptr) };
+    return optional_ref<T> { dynamic_cast<T *> (ptr) };
   }
 
   /**
@@ -2216,7 +2228,7 @@ namespace gch
   optional_ref<const T>
   maybe_cast (const U *ptr) noexcept
   {
-    return { dynamic_cast<const T *> (ptr) };
+    return optional_ref<const T> { dynamic_cast<const T *> (ptr) };
   }
 
   /**
