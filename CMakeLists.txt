@@ -4,11 +4,13 @@ PROJECT(optional_ref
         LANGUAGES CXX)
 
 # Options
-IF(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-  OPTION(GCH_OPTIONAL_REF_BUILD_TESTS "Set to ON to build tests for gch::optional_ref" ON)
-ELSE()
-  OPTION(GCH_OPTIONAL_REF_BUILD_TESTS "Set to ON to build tests for gch::optional_ref" OFF)
-ENDIF()
+IF (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  OPTION (GCH_OPTIONAL_REF_BUILD_TESTS   "Set to ON to build tests for gch::optional_ref"                           ON)
+  OPTION (GCH_OPTIONAL_REF_BUILD_DOXYGEN "Set to ON to build Doxygen generated documentation for gch::optional_ref" ON)
+ELSE ()
+  OPTION (GCH_OPTIONAL_REF_BUILD_TESTS "Set to ON to build tests for gch::optional_ref"                             OFF)
+  OPTION (GCH_OPTIONAL_REF_BUILD_DOXYGEN "Set to ON to build Doxygen generated documentation for gch::optional_ref" OFF)
+ENDIF ()
 
 OPTION (GCH_USE_LIBCXX_WITH_CLANG "Set to ON to use libc++ when compiling with Clang" OFF)
 

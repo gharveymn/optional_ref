@@ -142,15 +142,16 @@ namespace gch
    */
   struct nullopt_t
   {
-    struct create_tag { };
-    static constexpr create_tag create { };
+    /**
+     * A tag variable used to create the object.
+     */
+    static constexpr struct create_tag { } create { };
 
+    /**
+     * A tagged constructor.
+     */
     constexpr explicit
     nullopt_t (create_tag) noexcept
-    { }
-
-    constexpr GCH_IMPLICIT_CONVERSION
-    nullopt_t (std::nullptr_t) noexcept
     { }
   };
 
@@ -169,13 +170,45 @@ namespace gch
     : public std::exception
   {
   public:
+    /**
+     * A default constructor.
+     */
     bad_optional_access            (void)                           = default;
+    
+    /**
+     * A copy constructor.
+     */
     bad_optional_access            (const bad_optional_access&)     = default;
+    
+    /**
+     * A move constructor.
+     */
     bad_optional_access            (bad_optional_access&&) noexcept = default;
+    
+    /**
+     * A copy-assignment operator.
+     *
+     * @return a reference to the object.
+     */
     bad_optional_access& operator= (const bad_optional_access&)     = default;
+    
+    /**
+     * A move-assignment operator.
+     *
+     * @return a reference to the object.
+     */
     bad_optional_access& operator= (bad_optional_access&&) noexcept = default;
+    
+    /**
+     * A destructor.
+     */
     ~bad_optional_access           (void) noexcept override         = default;
 
+    /**
+     * Returns an error string.
+     *
+     * @return the error string.
+     */
     GCH_NODISCARD
     const char *
     what (void) const noexcept override
@@ -704,13 +737,6 @@ namespace gch
     {
       return ! has_value ();
     }
-
-    /**
-     * Compares the stored pointer with another pointer.
-     *
-     * @param cptr a pointer to be compared.
-     * @return whether the stored pointer is equal to the input.
-     */
 
     /**
      * Compares the stored pointer with another pointer.
