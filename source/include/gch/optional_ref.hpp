@@ -174,31 +174,31 @@ namespace gch
      * A default constructor.
      */
     bad_optional_access            (void)                           = default;
-    
+
     /**
      * A copy constructor.
      */
     bad_optional_access            (const bad_optional_access&)     = default;
-    
+
     /**
      * A move constructor.
      */
     bad_optional_access            (bad_optional_access&&) noexcept = default;
-    
+
     /**
      * A copy-assignment operator.
      *
      * @return a reference to the object.
      */
     bad_optional_access& operator= (const bad_optional_access&)     = default;
-    
+
     /**
      * A move-assignment operator.
      *
      * @return a reference to the object.
      */
     bad_optional_access& operator= (bad_optional_access&&) noexcept = default;
-    
+
     /**
      * A destructor.
      */
@@ -1571,7 +1571,7 @@ namespace gch
    * Compares the stored pointers of multiple `optional_ref`s.
    *
    * @tparam T the value type of an `optional_ref`.
-   * @tparam Us a type pack containing the value types of multiple `optional_refs`.
+   * @tparam Us a type pack containing pointer types or the value types of `optional_ref`s.
    * @param lhs an `optional_ref`.
    * @param rhs a parameter pack containing multiple `optional_ref`s.
    * @return whether all stored pointers are equal.
@@ -1586,15 +1586,6 @@ namespace gch
 
 #else
 
-  /**
-   * Compares the stored pointers of multiple `optional_ref`s.
-   *
-   * @tparam T the value type of an `optional_ref`.
-   * @tparam Us a type pack containing the value types of multiple `optional_refs`.
-   * @param lhs an `optional_ref`.
-   * @param rhs a parameter pack containing multiple `optional_ref`s.
-   * @return whether all stored pointers are equal.
-   */
   template <typename T, typename U, typename ...Rest>
   constexpr
   bool
