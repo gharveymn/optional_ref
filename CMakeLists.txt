@@ -1,17 +1,38 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-PROJECT(optional_ref
-        VERSION 0.1.1
-        LANGUAGES CXX)
+cmake_minimum_required (VERSION 3.15)
 
-# Options
-IF (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-  OPTION (GCH_OPTIONAL_REF_BUILD_TESTS   "Set to ON to build tests for gch::optional_ref"                           ON)
-  OPTION (GCH_OPTIONAL_REF_BUILD_DOXYGEN "Set to ON to build Doxygen generated documentation for gch::optional_ref" ON)
-ELSE ()
-  OPTION (GCH_OPTIONAL_REF_BUILD_TESTS "Set to ON to build tests for gch::optional_ref"                             OFF)
-  OPTION (GCH_OPTIONAL_REF_BUILD_DOXYGEN "Set to ON to build Doxygen generated documentation for gch::optional_ref" OFF)
-ENDIF ()
+project (
+  optional_ref
+  VERSION
+    0.1.2
+  LANGUAGES
+    CXX
+)
 
-OPTION (GCH_USE_LIBCXX_WITH_CLANG "Set to ON to use libc++ when compiling with Clang" OFF)
+string (COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" _EXTRAS_DEFAULT)
 
-ADD_SUBDIRECTORY(source)
+option (
+  GCH_OPTIONAL_REF_BUILD_TESTS
+  "Set to ON to build tests for gch::optional_ref."
+  ${_EXTRAS_DEFAULT}
+)
+
+option (
+  GCH_OPTIONAL_REF_BUILD_DOCS
+  "Set to ON to build documentation for gch::optional_ref."
+  ${_EXTRAS_DEFAULT}
+)
+
+include (CMakeDependentOption)
+cmake_dependent_option (
+  GCH_USE_LIBCXX_WITH_CLANG
+  "Set to ON to use libc++ when compiling with Clang."
+  OFF
+  "CMAKE_CXX_COMPILER_ID MATCHES Clang"
+  OFF
+)
+
+if (GCH_OPTIONAL_REF_BUILD_TESTS)
+  enable_testing ()
+endif ()
+
+add_subdirectory (source)

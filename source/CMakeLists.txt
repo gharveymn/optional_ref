@@ -1,46 +1,74 @@
-IF (NOT CREATE_PACKAGE_VERSION VERSION_GREATER_EQUAL 0.0.5)
-  IF (NOT EXISTS "${PROJECT_SOURCE_DIR}/external/create-package/cmake/create-package.cmake")
-    MESSAGE (STATUS "Initializing create-package-0.0.5 in git submodule.")
-    EXECUTE_PROCESS (COMMAND git submodule --quiet update --init -- "${PROJECT_SOURCE_DIR}/external/create-package"
-                     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-  ENDIF ()
-  INCLUDE ("${PROJECT_SOURCE_DIR}/external/create-package/cmake/create-package.cmake")
-ENDIF ()
+add_library (optional_ref INTERFACE)
 
-CREATE_PACKAGE (AUTHOR        gharveymn
-                NAMESPACE     gch
-                NAME          optional_ref
-                HEADERS       optional_ref.hpp
-                COMPATIBILITY SameMinorVersion)
+target_sources (
+  optional_ref
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include/gch/optional_ref.hpp>
+)
 
-IF (GCH_OPTIONAL_REF_BUILD_DOXYGEN)
-  MESSAGE (STATUS "Doxygen for gch::optional_ref is enabled.")
+target_include_directories (
+  optional_ref
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
 
-  FIND_PACKAGE (Doxygen)
-  IF (DOXYGEN_FOUND)
-    MESSAGE (STATUS "Doxygen build files will be generated")
+target_include_directories (
+  optional_ref
+  SYSTEM INTERFACE
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+)
 
-    SET (DOXYGEN_IN_FILE    "${CMAKE_CURRENT_LIST_DIR}/docs/doxygen/Doxyfile.in")
-    SET (DOXYGEN_BUILD_FILE "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
+set_target_properties (
+  optional_ref
+  PROPERTIES
+  PUBLIC_HEADER
+    include/gch/optional_ref.hpp
+)
 
-    CONFIGURE_FILE (${DOXYGEN_IN_FILE} ${DOXYGEN_BUILD_FILE} @ONLY)
+add_library (gch::optional_ref ALIAS optional_ref)
 
-    ADD_CUSTOM_TARGET (optional_ref.doxygen
-                       COMMAND "${DOXYGEN_EXECUTABLE}" "${DOXYGEN_BUILD_FILE}"
-                       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                       COMMENT "Generating Doxygen documentation for gch::optional_ref."
-                       VERBATIM)
+install (
+  TARGETS
+    optional_ref
+  EXPORT
+    optional_ref-targets
+  PUBLIC_HEADER
+    DESTINATION include/gch
+)
 
-    INSTALL (DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doxygen/html"
-             DESTINATION share/doc/gch/optional_ref)
-  ELSE ()
-    MESSAGE (WARNING "Doxygen installation not found. Build files for documentation will not be generated")
-  ENDIF ()
-ENDIF ()
+file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-config.cmake [=[
+get_filename_component (PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
+include ("${CMAKE_CURRENT_LIST_DIR}/optional_ref-targets.cmake")
+]=])
 
-IF (GCH_OPTIONAL_REF_BUILD_TESTS)
-  MESSAGE (STATUS "Testing for gch::optional_ref is enabled.")
-  ADD_SUBDIRECTORY (test)
-ELSE ()
-  MESSAGE (STATUS "Testing for gch::optional_ref is disabled.")
-ENDIF ()
+include (CMakePackageConfigHelpers)
+write_basic_package_version_file (
+  optional_ref-version.cmake
+  COMPATIBILITY
+    SameMinorVersion
+)
+
+install (
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-version.cmake
+  DESTINATION
+    lib/cmake/optional_ref
+)
+
+install (
+  EXPORT
+    optional_ref-targets
+  DESTINATION
+    lib/cmake/optional_ref
+  NAMESPACE
+    gch::
+)
+
+if (GCH_OPTIONAL_REF_BUILD_DOCS)
+  add_subdirectory (docs)
+endif ()
+
+if (GCH_OPTIONAL_REF_BUILD_TESTS)
+  add_subdirectory (test)
+endif ()
