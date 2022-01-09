@@ -36,9 +36,9 @@ test (void)
   bool t4 = (rn != gch::nullopt) && (rm == gch::nullopt) && (rm != rn) && (rn == rx);
 
   return t1 && t2 && t3 && t4;
-#endif
-
+#else
   return true;
+#endif
 }
 
 static_assert (test (), "failed swap");
