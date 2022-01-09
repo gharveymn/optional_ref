@@ -36,3 +36,10 @@ if (GCH_OPTIONAL_REF_BUILD_TESTS)
 endif ()
 
 add_subdirectory (source)
+
+export (
+  EXPORT
+    optional_ref-targets
+  NAMESPACE
+    gch::
+)
