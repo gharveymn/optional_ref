@@ -2324,6 +2324,14 @@ namespace gch
     return maybe_cast<T> (opt.get_pointer ());
   }
 
+  template <typename T>
+  constexpr
+  optional_ref<T>
+  as_mutable (optional_ref<const T> opt) noexcept
+  {
+    return optional_ref<T> { const_cast<T *> (opt.get_pointer ()) };
+  }
+
 } // namespace gch
 
 namespace std
