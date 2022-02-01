@@ -1,14 +1,14 @@
 /** optional_ref.hpp
  * Defines an optional reference.
  *
- * Copyright © 2019-2021 Gene Harvey
+ * Copyright © 2019 Gene Harvey
  *
  * This software may be modified and distributed under the terms
  * of the MIT license. See the LICENSE file for details.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef OPTIONAL_REF_HPP
-#define OPTIONAL_REF_HPP
+#ifndef GCH_OPTIONAL_REF_HPP
+#define GCH_OPTIONAL_REF_HPP
 
 #include <exception>
 #include <functional>
@@ -133,6 +133,11 @@
 #  endif
 #endif
 
+#ifdef GCH_CLANG
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdocumentation" // Ignore @tparam warnings.
+#endif
+
 namespace gch
 {
 
@@ -161,6 +166,11 @@ namespace gch
   GCH_INLINE_VARIABLE constexpr
   nullopt_t
   nullopt { nullopt_t::create };
+
+#ifdef GCH_CLANG
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wweak-vtables" // Ignore warnings about virtual methods.
+#endif
 
   /**
    * An exception class for cases of bad access
@@ -216,6 +226,10 @@ namespace gch
       return "bad optional_ref access";
     }
   };
+
+#ifdef GCH_CLANG
+#  pragma clang diagnostic pop
+#endif
 
   /**
    * A utility type-trait for identifying `optional_ref`s.
@@ -803,13 +817,14 @@ namespace gch
   {
 
     /**
-     * A concept utility for identifying `optional_ref`s.
+     * A utility concept for identifying `optional_ref`s.
      *
      * This might be useful in template parameters like
-     * ```
-     * template <OptionalRef opt>
+     *
+     * ```c++
+     * template <OptionalRef Opt>
      * void
-     * do_something (void);
+     * f (Opt o);
      * ```
      *
      * @tparam T the `value_type` of an `optional_ref`.
@@ -825,8 +840,6 @@ namespace gch
 
   /**
    * An equality comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
@@ -848,8 +861,6 @@ namespace gch
   /**
    * An inequality comparison function.
    *
-   * Compared by value.
-   *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
    * @param lhs an `optional_ref`.
@@ -869,8 +880,6 @@ namespace gch
 
   /**
    * An less-than comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
@@ -892,8 +901,6 @@ namespace gch
   /**
    * A greater-than-equal comparison function.
    *
-   * Compared by value.
-   *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
    * @param lhs an `optional_ref`.
@@ -914,8 +921,6 @@ namespace gch
   /**
    * A greater-than comparison function.
    *
-   * Compared by value.
-   *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
    * @param lhs an `optional_ref`.
@@ -935,8 +940,6 @@ namespace gch
 
   /**
    * A less-than-equal comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
@@ -959,8 +962,6 @@ namespace gch
 
   /**
    * A three-way comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `lhs`.
    * @tparam U the value type of `rhs`.
@@ -985,8 +986,6 @@ namespace gch
   /**
    * An equality comparison function.
    *
-   * Compared by value.
-   *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
    * @return the result of the equality comparison.
@@ -1003,8 +1002,6 @@ namespace gch
 
   /**
    * An equality comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `rhs`.
    * @param rhs an `optional_ref`.
@@ -1024,8 +1021,6 @@ namespace gch
 
   /**
    * A three-way comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `rhs`.
    * @param lhs an `optional_ref`.
@@ -1054,8 +1049,6 @@ namespace gch
   /**
    * An inequality comparison function.
    *
-   * Compared by value.
-   *
    * @tparam T the value type of `lhs`.
    * @param lhs an `optional_ref`.
    * @return the result of the inequality comparison.
@@ -1072,8 +1065,6 @@ namespace gch
 
   /**
    * An inequality comparison function.
-   *
-   * Compared by value.
    *
    * @tparam T the value type of `rhs`.
    * @param rhs an `optional_ref`.
@@ -1241,12 +1232,12 @@ namespace gch
   /**
    * An equality comparison function.
    *
-   * Compared by value.
+   * Compared by value. Use `equal_pointer` to compare pointers.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the equality comparison.
    *
    * @see std::optional::operator==
@@ -1267,8 +1258,8 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the equality comparison.
    *
@@ -1286,12 +1277,12 @@ namespace gch
   /**
    * An inequality comparison function.
    *
-   * Compared by value.
+   * Compared by value. Use `equal_pointer` to compare pointers.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the inequality comparison.
    *
    * @see std::optional::operator!=
@@ -1308,11 +1299,11 @@ namespace gch
   /**
    * An inequality comparison function.
    *
-   * Compared by value.
+   * Compared by value. Use `equal_pointer` to compare pointers.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the inequality comparison.
    *
@@ -1333,9 +1324,9 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the less-than comparison.
    *
    * @see std::optional::operator<
@@ -1355,8 +1346,8 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the less-than comparison.
    *
@@ -1377,9 +1368,9 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the greater-than-equal comparison.
    *
    * @see std::optional::operator>=
@@ -1399,8 +1390,8 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the greater-than-equal comparison.
    *
@@ -1421,9 +1412,9 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the greater-than comparison.
    *
    * @see std::optional::operator>
@@ -1443,8 +1434,8 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the greater-than comparison.
    *
@@ -1465,9 +1456,9 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the less-than-equal comparison.
    *
    * @see std::optional::operator<=
@@ -1487,8 +1478,8 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `rhs`.
-   * @tparam U a value type which is comparable to `T *`.
-   * @param lhs a comparable pointer.
+   * @tparam U the value type of a reference which is comparable to T.
+   * @param lhs a comparable reference.
    * @param rhs an `optional_ref`.
    * @return the result of the less-than-equal comparison.
    *
@@ -1511,9 +1502,9 @@ namespace gch
    * Compared by value.
    *
    * @tparam T the value type of `lhs`.
-   * @tparam U a value type which is comparable to `T *`.
+   * @tparam U the value type of a reference which is comparable to T.
    * @param lhs an `optional_ref`.
-   * @param rhs a comparable pointer.
+   * @param rhs a comparable reference.
    * @return the result of the three-way comparison.
    *
    * @see std::optional::operator<=>
@@ -2324,12 +2315,39 @@ namespace gch
     return maybe_cast<T> (opt.get_pointer ());
   }
 
+  /**
+   * Create a const version of an `optional_ref`.
+   *
+   * This can be useful for template code.
+   *
+   * @tparam T the value type of an `optional_ref`.
+   * @param opt an `optional_ref` which holds a non-const reference.
+   * @return a const version of the `optional_ref`.
+   */
   template <typename T>
   constexpr
-  optional_ref<T>
-  as_mutable (optional_ref<const T> opt) noexcept
+  optional_ref<const T>
+  as_const (optional_ref<T> opt) noexcept
   {
-    return optional_ref<T> { const_cast<T *> (opt.get_pointer ()) };
+    return opt;
+  }
+
+  /**
+   * Creates a mutable version of an `optional_ref`.
+   *
+   * This function performs a `const_cast` on the underlying pointer
+   * held by the `optional_ref` and returns a non-const `optional_ref`.
+   *
+   * @tparam T the value type of an `optional_ref`.
+   * @param opt an `optional_ref` which holds a const reference.
+   * @return a non-const version of the `optional_ref`.
+   */
+  template <typename T>
+  constexpr
+  optional_ref<typename std::remove_const<T>::type>
+  as_mutable (optional_ref<T> opt) noexcept
+  {
+    return const_cast<typename std::remove_const<T>::type *> (opt.get_pointer ());
   }
 
 } // namespace gch
@@ -2362,4 +2380,8 @@ namespace std
 
 } // namespace std
 
+#ifdef GCH_CLANG
+#  pragma clang diagnostic pop
 #endif
+
+#endif // GCH_OPTIONAL_REF_HPP

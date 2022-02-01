@@ -3,7 +3,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   string (REGEX REPLACE "/GR ?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif ()
 
-macro (add_unit_test target_name)
+macro (add_optional_ref_unit_test target_name)
   add_executable (${target_name} ${ARGN})
   target_link_libraries (${target_name} PRIVATE gch::optional_ref)
 
@@ -86,41 +86,52 @@ macro (add_unit_test target_name)
   )
 endmacro ()
 
-set (OPTIONAL_REF_TEST_NAMES
-     test-arrow
-     test-assign
-     test-bind
-     test-comparison
-     test-comparison-constexpr
-     test-comparison-constexpr-disparate
-     test-const
-     test-contains
-     test-deduction
-     test-hash
-     test-incomplete
-     test-inheritence
-     test-instantiation
-     test-make_optional_ref
-     test-movement
-     test-nullopt
-     test-pointer-cast
-     test-swap-constexpr
-     test-throw
-     )
+add_custom_target (optional_ref.ctest)
 
-foreach (version 11 14 17 20)
-  foreach (name ${OPTIONAL_REF_TEST_NAMES})
-    add_unit_test (optional_ref.${name}.c++${version} ${name}.cpp)
+if (NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
+  set (CMAKE_CXX_STANDARD_REQUIRED OFF)
+endif ()
 
-    set_target_properties (
-      optional_ref.${name}.c++${version}
-      PROPERTIES
-      CXX_STANDARD
-        ${version}
-      CXX_STANDARD_REQUIRED
-        NO
-      CXX_EXTENSIONS
-        NO
-    )
+if (NOT DEFINED CMAKE_CXX_EXTENSIONS)
+  set (CMAKE_CXX_EXTENSIONS OFF)
+endif ()
+
+macro (add_optional_ref_ctest_executables)
+  foreach (file ${ARGN})
+    get_filename_component (_TARGET_NAME_BASE "${file}" NAME_WE)
+    string (PREPEND _TARGET_NAME_BASE "optional_ref.")
+
+    foreach (version 11 14 17 20)
+      set (_TARGET_NAME ${_TARGET_NAME_BASE}.c++${version})
+
+      add_optional_ref_unit_test (${_TARGET_NAME} ${file})
+
+      target_compile_features (${_TARGET_NAME} PRIVATE cxx_std_${version})
+      add_dependencies(optional_ref.ctest ${_TARGET_NAME})
+    endforeach ()
   endforeach ()
-endforeach ()
+endmacro ()
+
+add_optional_ref_ctest_executables (
+  test-arrow.cpp
+  test-as_const.cpp
+  test-as_mutable.cpp
+  test-assign.cpp
+  test-bind.cpp
+  test-comparison-constexpr-disparate.cpp
+  test-comparison-constexpr.cpp
+  test-comparison.cpp
+  test-const.cpp
+  test-contains.cpp
+  test-deduction.cpp
+  test-hash.cpp
+  test-incomplete.cpp
+  test-inheritence.cpp
+  test-instantiation.cpp
+  test-make_optional_ref.cpp
+  test-movement.cpp
+  test-nullopt.cpp
+  test-pointer-cast.cpp
+  test-swap-constexpr.cpp
+  test-throw.cpp
+)

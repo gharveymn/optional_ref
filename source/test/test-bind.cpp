@@ -79,6 +79,7 @@ struct test_struct
   int fv_val = 0;
 };
 
+#ifndef GCH_CLANG
 static constexpr
 int
 test_struct_func (test_struct&)
@@ -92,6 +93,7 @@ test_struct_func (const test_struct&)
 {
   return 8;
 }
+#endif
 
 static GCH_CPP14_CONSTEXPR
 void

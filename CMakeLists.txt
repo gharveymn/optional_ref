@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.15)
 project (
   optional_ref
   VERSION
-    0.1.2
+    0.2.0
   LANGUAGES
     CXX
 )
