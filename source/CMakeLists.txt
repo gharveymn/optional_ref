@@ -69,6 +69,6 @@ if (GCH_OPTIONAL_REF_BUILD_DOCS)
   add_subdirectory (docs)
 endif ()
 
-if (GCH_OPTIONAL_REF_BUILD_TESTS)
+if (GCH_OPTIONAL_REF_ENABLE_TESTS)
   add_subdirectory (test)
 endif ()

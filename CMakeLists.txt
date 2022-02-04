@@ -11,7 +11,7 @@ project (
 string (COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" _EXTRAS_DEFAULT)
 
 option (
-  GCH_OPTIONAL_REF_BUILD_TESTS
+  GCH_OPTIONAL_REF_ENABLE_TESTS
   "Set to ON to build tests for gch::optional_ref."
   ${_EXTRAS_DEFAULT}
 )
@@ -31,7 +31,7 @@ cmake_dependent_option (
   OFF
 )
 
-if (GCH_OPTIONAL_REF_BUILD_TESTS)
+if (GCH_OPTIONAL_REF_ENABLE_TESTS)
   enable_testing ()
 endif ()
 
