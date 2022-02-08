@@ -77,13 +77,6 @@ macro (add_optional_ref_unit_test target_name)
     target_compile_options (${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
     target_link_options (${target_name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
   endif ()
-
-  add_test (
-    NAME
-      ${target_name}
-    COMMAND
-      ${target_name}
-  )
 endmacro ()
 
 add_custom_target (optional_ref.ctest)
@@ -107,7 +100,14 @@ macro (add_optional_ref_ctest_executables)
       add_optional_ref_unit_test (${_TARGET_NAME} ${file})
 
       target_compile_features (${_TARGET_NAME} PRIVATE cxx_std_${version})
-      add_dependencies(optional_ref.ctest ${_TARGET_NAME})
+      add_dependencies (optional_ref.ctest ${_TARGET_NAME})
+
+      add_test (
+        NAME
+          ${_TARGET_NAME}
+        COMMAND
+          ${_TARGET_NAME}
+      )
     endforeach ()
   endforeach ()
 endmacro ()
