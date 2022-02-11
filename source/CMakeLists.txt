@@ -65,8 +65,25 @@ install (
     gch::
 )
 
-if (GCH_OPTIONAL_REF_BUILD_DOCS)
-  add_subdirectory (docs)
+if (GCH_OPTIONAL_REF_ENABLE_DOXYGEN)
+  find_package (Doxygen)
+  if (DOXYGEN_FOUND)
+    set (DOXYGEN_TAB_SIZE 2)
+    set (DOXYGEN_GENERATE_TREEVIEW YES)
+    set (DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
+
+    doxygen_add_docs (
+      optional_ref.doxygen
+      gch/optional_ref.hpp
+      WORKING_DIRECTORY
+        ${PROJECT_SOURCE_DIR}/source/include
+    )
+  else ()
+    message (
+      WARNING
+      "Doxygen installation not found. Targets for Doxygen will not be generated"
+    )
+  endif ()
 endif ()
 
 if (GCH_OPTIONAL_REF_ENABLE_TESTS)

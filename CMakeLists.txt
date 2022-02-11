@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.15)
 project (
   optional_ref
   VERSION
-    0.2.0
+    0.2.1
   LANGUAGES
     CXX
 )
@@ -12,13 +12,13 @@ string (COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" _EXTRA
 
 option (
   GCH_OPTIONAL_REF_ENABLE_TESTS
-  "Set to ON to build tests for gch::optional_ref."
+  "Set to ON to enable generation of test targets for gch::optional_ref."
   ${_EXTRAS_DEFAULT}
 )
 
 option (
-  GCH_OPTIONAL_REF_BUILD_DOCS
-  "Set to ON to build documentation for gch::optional_ref."
+  GCH_OPTIONAL_REF_ENABLE_DOXYGEN
+  "Set to ON to enable generation of Doxygen targets for gch::optional_ref."
   ${_EXTRAS_DEFAULT}
 )
 
