@@ -68,9 +68,10 @@ install (
 if (GCH_OPTIONAL_REF_ENABLE_DOXYGEN)
   find_package (Doxygen)
   if (DOXYGEN_FOUND)
-    set (DOXYGEN_TAB_SIZE 2)
+    set (DOXYGEN_EXCLUDE_SYMBOLS   gch::detail)
     set (DOXYGEN_GENERATE_TREEVIEW YES)
-    set (DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
+    set (DOXYGEN_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
+    set (DOXYGEN_TAB_SIZE          2)
 
     doxygen_add_docs (
       optional_ref.doxygen

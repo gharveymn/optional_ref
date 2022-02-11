@@ -147,10 +147,26 @@ namespace gch
    */
   struct nullopt_t
   {
+  private:
     /**
-     * A tag variable used to create the object.
+     * A tag type used to create `nullopt`.
      */
-    static constexpr struct create_tag { } create { };
+    struct create_tag
+    {
+      /**
+       * An explicit constructor to prevent initialization of `nullopt_t`
+       * with expressions like `nullopt_t { { } }`.
+       */
+      explicit create_tag (void) = default;
+    };
+
+  public:
+    /**
+     * A tag variable used to create `nullopt`.
+     */
+    static constexpr
+    create_tag
+    create { };
 
     /**
      * A tagged constructor.
@@ -183,24 +199,24 @@ namespace gch
     /**
      * A default constructor.
      */
-    bad_optional_access            (void)                           = default;
+    bad_optional_access (void) = default;
 
     /**
      * A copy constructor.
      */
-    bad_optional_access            (const bad_optional_access&)     = default;
+    bad_optional_access (const bad_optional_access&) = default;
 
     /**
      * A move constructor.
      */
-    bad_optional_access            (bad_optional_access&&) noexcept = default;
+    bad_optional_access (bad_optional_access&&) noexcept = default;
 
     /**
      * A copy-assignment operator.
      *
      * @return a reference to the object.
      */
-    bad_optional_access& operator= (const bad_optional_access&)     = default;
+    bad_optional_access& operator= (const bad_optional_access&) = default;
 
     /**
      * A move-assignment operator.
@@ -212,7 +228,7 @@ namespace gch
     /**
      * A destructor.
      */
-    ~bad_optional_access           (void) noexcept override         = default;
+    ~bad_optional_access (void) noexcept override = default;
 
     /**
      * Returns an error string.
@@ -237,9 +253,7 @@ namespace gch
    * @tparam OptionalRef the type to be inspected.
    */
   template <typename OptionalRef>
-  struct is_optional_ref
-    : std::false_type
-  { };
+  struct is_optional_ref;
 
 #ifdef GCH_VARIABLE_TEMPLATES
 
@@ -801,11 +815,12 @@ namespace gch
   static_assert (std::is_trivially_copyable<optional_ref<int>>::value,
                  "optional_ref should be trivially copyable");
 
-  /**
-   * A partial-specialization for `is_optional_ref` (true case).
-   *
-   * @tparam T the `value_type` of an `optional_ref`.
-   */
+
+  template <typename OptionalRef>
+  struct is_optional_ref
+    : std::false_type
+  { };
+
   template <typename T>
   struct is_optional_ref<optional_ref<T>>
     : std::true_type
@@ -1643,6 +1658,86 @@ namespace gch
   template <typename T>
   using optional_cref = optional_ref<const T>;
 
+  /**
+   * Determines whether the given types may be used in a call to
+   * `maybe_invoke`.
+   *
+   * @tparam Optional a monadic optional type.
+   * @tparam Functor a functor type
+   * @tparam Args the types of arguments used in a call to `maybe_invoke`.
+   */
+  template <typename Optional, typename Functor, typename ...Args>
+  struct is_maybe_invocable;
+
+  /**
+   * Determines whether the given types may be used in a noexcept call to
+   * `maybe_invoke`.
+   *
+   * @tparam Optional a monadic optional type.
+   * @tparam Functor a functor type
+   * @tparam Args the types of arguments used in a call to `maybe_invoke`.
+   */
+  template <typename Optional, typename Functor, typename ...Args>
+  struct is_nothrow_maybe_invocable;
+
+  /**
+   * Deduces the return type of a call to `maybe_invoke`.
+   *
+   * Contains the member type `type` only if an object of type `Optional`
+   * may be used in a call to `maybe_invoke` with a functor of type
+   * `Functor`, and arguments `Args...`.
+   *
+   * In other words, the value of
+   * `is_maybe_invocable<Optional, Functor, Args...>` must be equal to `true`.
+   *
+   * @tparam Optional a monadic optional type.
+   * @tparam Functor a functor type
+   * @tparam Args the types of arguments used in a call to `maybe_invoke`.
+   */
+  template <typename Optional, typename Functor, typename ...Args>
+  struct maybe_invoke_result;
+
+  /**
+   * A convenience alias for `maybe_invoke_result`.
+   *
+   * @tparam Optional a monadic optional type.
+   * @tparam Functor a functor type
+   * @tparam Args the types of arguments used in a call to `maybe_invoke`.
+   */
+  template <typename Optional, typename Functor, typename ...Args>
+  using maybe_invoke_result_t = typename maybe_invoke_result<Optional, Functor, Args...>::type;
+
+  /**
+   * Determines whether the type may be used as a return type in a
+   * `maybe_invoke` expression.
+   *
+   * Valid return types must either not be object types, or
+   * default constructible.
+   *
+   * @tparam Result the return type of a call to `maybe_invoke`.
+   */
+  template <typename Result>
+  struct is_valid_maybe_invoke_result;
+
+#ifdef GCH_VARIABLE_TEMPLATES
+
+  template <typename Optional, typename Functor, typename ...Args>
+  GCH_INLINE_VARIABLE constexpr
+  bool
+  is_maybe_invocable_v = is_maybe_invocable<Optional, Functor, Args...>::value;
+
+  template <typename Optional, typename Functor, typename ...Args>
+  GCH_INLINE_VARIABLE constexpr
+  bool
+  is_nothrow_maybe_invocable_v = is_nothrow_maybe_invocable<Optional, Functor, Args...>::value;
+
+  template <typename Result>
+  GCH_INLINE_VARIABLE constexpr
+  bool
+  is_valid_maybe_invoke_result_v = is_valid_maybe_invoke_result<Result>::value;
+
+#endif
+
   namespace detail
   {
 
@@ -1764,22 +1859,6 @@ namespace gch
     }
 
     template <typename Void, typename Optional, typename Functor, typename ...Args>
-    struct maybe_invoke_result_optional_ref
-    { };
-
-    template <typename T, typename Functor, typename ...Args>
-    struct maybe_invoke_result_optional_ref<
-      decltype (static_cast<void> (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
-                                                              std::declval<Functor> (),
-                                                              std::declval<Args> ()...))),
-      optional_ref<T>, Functor, Args...>
-    {
-      using type = decltype (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
-                                                        std::declval<Functor> (),
-                                                        std::declval<Args> ()...));
-    };
-
-    template <typename Void, typename Optional, typename Functor, typename ...Args>
     struct is_maybe_invocable_optional_ref
       : std::false_type
     {
@@ -1800,6 +1879,22 @@ namespace gch
                                                              std::declval<Args> ()...))>;
     };
 
+    template <typename Void, typename Optional, typename Functor, typename ...Args>
+    struct maybe_invoke_result_optional_ref
+    { };
+
+    template <typename T, typename Functor, typename ...Args>
+    struct maybe_invoke_result_optional_ref<
+      decltype (static_cast<void> (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                              std::declval<Functor> (),
+                                                              std::declval<Args> ()...))),
+      optional_ref<T>, Functor, Args...>
+    {
+      using type = decltype (maybe_invoke_optional_ref (std::declval<optional_ref<T>> (),
+                                                        std::declval<Functor> (),
+                                                        std::declval<Args> ()...));
+    };
+
     template <typename Result, typename Enable = void>
     struct is_valid_maybe_invoke_result_impl
       : std::false_type
@@ -1814,40 +1909,6 @@ namespace gch
     { };
 
   }
-
-  template <typename Optional, typename Functor, typename ...Args>
-  struct maybe_invoke_result;
-
-  template <typename T, typename Functor, typename ...Args>
-  struct maybe_invoke_result<optional_ref<T>, Functor, Args...>
-    : detail::maybe_invoke_result_optional_ref<void, optional_ref<T>, Functor, Args...>
-  { };
-
-  template <typename T, typename Functor, typename ...Args>
-  struct maybe_invoke_result<optional_ref<T>&, Functor, Args...>
-    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
-  { };
-
-  template <typename T, typename Functor, typename ...Args>
-  struct maybe_invoke_result<const optional_ref<T>&, Functor, Args...>
-    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
-  { };
-
-  template <typename T, typename Functor, typename ...Args>
-  struct maybe_invoke_result<optional_ref<T>&&, Functor, Args...>
-    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
-  { };
-
-  template <typename T, typename Functor, typename ...Args>
-  struct maybe_invoke_result<const optional_ref<T>&&, Functor, Args...>
-    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
-  { };
-
-  template <typename Optional, typename Functor, typename ...Args>
-  using maybe_invoke_result_t = typename maybe_invoke_result<Optional, Functor, Args...>::type;
-
-  template <typename Optional, typename Functor, typename ...Args>
-  struct is_maybe_invocable;
 
   template <typename T, typename Functor, typename ...Args>
   struct is_maybe_invocable<optional_ref<T>, Functor, Args...>
@@ -1874,9 +1935,6 @@ namespace gch
     : is_maybe_invocable<optional_ref<T>, Functor, Args...>
   { };
 
-  template <typename Optional, typename Functor, typename ...Args>
-  struct is_nothrow_maybe_invocable;
-
   template <typename T, typename Functor, typename ...Args>
   struct is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
     : detail::is_maybe_invocable_optional_ref<void, optional_ref<T>, Functor, Args...>::nothrow
@@ -1902,29 +1960,35 @@ namespace gch
     : is_nothrow_maybe_invocable<optional_ref<T>, Functor, Args...>
   { };
 
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>, Functor, Args...>
+    : detail::maybe_invoke_result_optional_ref<void, optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<const optional_ref<T>&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<optional_ref<T>&&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
+  template <typename T, typename Functor, typename ...Args>
+  struct maybe_invoke_result<const optional_ref<T>&&, Functor, Args...>
+    : maybe_invoke_result<optional_ref<T>, Functor, Args...>
+  { };
+
   template <typename Result>
   struct is_valid_maybe_invoke_result
     : detail::is_valid_maybe_invoke_result_impl<Result>
   { };
-
-#ifdef GCH_VARIABLE_TEMPLATES
-
-  template <typename Optional, typename Functor, typename ...Args>
-  GCH_INLINE_VARIABLE constexpr
-  bool
-  is_maybe_invocable_v = is_maybe_invocable<Optional, Functor, Args...>::value;
-
-  template <typename Optional, typename Functor, typename ...Args>
-  GCH_INLINE_VARIABLE constexpr
-  bool
-  is_nothrow_maybe_invocable_v = is_nothrow_maybe_invocable<Optional, Functor, Args...>::value;
-
-  template <typename Result>
-  GCH_INLINE_VARIABLE constexpr
-  bool
-  is_valid_maybe_invoke_result_v = is_valid_maybe_invoke_result<Result>::value;
-
-#endif
 
   /**
    * Invokes a functor on the optional if and only if it has a value.
@@ -2364,7 +2428,7 @@ namespace std
   struct hash<gch::optional_ref<T>>
   {
     /**
-     * An invokable operator.
+     * An invocable operator.
      *
      * We just use the same hash as the underlying pointer.
      *
