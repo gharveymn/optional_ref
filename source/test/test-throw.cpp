@@ -8,6 +8,7 @@
 #include "test_common.hpp"
 
 #include <stdexcept>
+#include <iostream>
 
 int
 main (void)
@@ -18,6 +19,17 @@ main (void)
   {
     static_cast<void> (r.value ());
   }
-  catch (const gch::bad_optional_access& e) { static_cast<void> (e.what ()); }
-  catch (...) { throw std::runtime_error ("optional_ref does not throw bad_optional_access"); }
+  catch (const gch::bad_optional_access& e)
+  {
+    static_cast<void> (e.what ());
+    return 0;
+  }
+  catch (...)
+  {
+    std::cerr << "gch::optional_ref did not throw gch::bad_optional_access." << std::endl;
+  }
+
+  std::cerr << "gch::optional_ref did not throw at all." << std::endl;
+
+  return 1;
 }

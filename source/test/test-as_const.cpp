@@ -17,4 +17,6 @@ main (void)
 
   auto rcc = as_const (rc);
   static_assert (std::is_same<decltype (rcc), gch::optional_ref<const int>>::value, "");
+
+  return 0;
 }

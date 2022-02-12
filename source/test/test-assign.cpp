@@ -7,6 +7,8 @@
 
 #include "test_common.hpp"
 
+#include <string>
+#include <vector>
 int
 main (void)
 {
@@ -30,4 +32,15 @@ main (void)
   CHECK (! r.refers_to (y));
   CHECK (! r.equal_pointer (&y));
   CHECK (r.equal_pointer (nullptr));
+
+  std::vector<std::string> strs (3);
+  strs[0] = "hello";
+  strs[1] = "hi";
+  strs[2] = "howdy";
+
+  gch::optional_ref<std::vector<std::string>> strs_ref;
+  strs_ref = gch::make_optional_ref (strs);
+  strs_ref.reset ();
+
+  return 0;
 }

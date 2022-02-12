@@ -17,4 +17,6 @@ main (void)
 
   auto rmm = as_mutable (rm);
   static_assert (std::is_same<decltype (rmm), gch::optional_ref<int>>::value, "");
+
+  return 0;
 }

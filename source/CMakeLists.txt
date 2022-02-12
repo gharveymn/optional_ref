@@ -15,7 +15,7 @@ target_include_directories (
 target_include_directories (
   optional_ref
   SYSTEM INTERFACE
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${GCH_OPTIONAL_REF_INSTALL_INCLUDE_DIR}>
 )
 
 set_target_properties (
@@ -33,13 +33,21 @@ install (
   EXPORT
     optional_ref-targets
   PUBLIC_HEADER
-    DESTINATION include/gch
+    DESTINATION ${GCH_OPTIONAL_REF_INSTALL_INCLUDE_DIR}/gch
 )
 
-file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-config.cmake [=[
-get_filename_component (PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
-include ("${CMAKE_CURRENT_LIST_DIR}/optional_ref-targets.cmake")
-]=])
+file (
+  RELATIVE_PATH
+  _PACKAGE_PREFIX_DIR
+  "${CMAKE_INSTALL_PREFIX}/${GCH_OPTIONAL_REF_INSTALL_CMAKE_DIR}"
+  "${CMAKE_INSTALL_PREFIX}"
+)
+string (PREPEND _PACKAGE_PREFIX_DIR \${CMAKE_CURRENT_LIST_DIR}/)
+
+file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-config.cmake "\
+get_filename_component (PACKAGE_PREFIX_DIR \"${_PACKAGE_PREFIX_DIR}\" ABSOLUTE)
+include (\"\${CMAKE_CURRENT_LIST_DIR}/optional_ref-targets.cmake\")
+")
 
 include (CMakePackageConfigHelpers)
 write_basic_package_version_file (
@@ -53,16 +61,24 @@ install (
     ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-config.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/optional_ref-version.cmake
   DESTINATION
-    lib/cmake/optional_ref
+    ${GCH_OPTIONAL_REF_INSTALL_CMAKE_DIR}
 )
 
 install (
   EXPORT
     optional_ref-targets
   DESTINATION
-    lib/cmake/optional_ref
+    ${GCH_OPTIONAL_REF_INSTALL_CMAKE_DIR}
   NAMESPACE
     gch::
+)
+
+install (
+  DIRECTORY
+    ${CMAKE_CURRENT_LIST_DIR}/support/
+  DESTINATION
+    ${GCH_OPTIONAL_REF_INSTALL_SUPPORT_DIR}
+  PATTERN "__pycache__" EXCLUDE
 )
 
 if (GCH_OPTIONAL_REF_ENABLE_DOXYGEN)
