@@ -7,8 +7,10 @@
 
 #include "test_common.hpp"
 
-#include <stdexcept>
+#ifdef GCH_EXCEPTIONS
+
 #include <iostream>
+#include <stdexcept>
 
 int
 main (void)
@@ -21,7 +23,7 @@ main (void)
   }
   catch (const gch::bad_optional_access& e)
   {
-    static_cast<void> (e.what ());
+    std::cout << e.what () << std::endl;
     return 0;
   }
   catch (...)
@@ -33,3 +35,35 @@ main (void)
 
   return 1;
 }
+
+#else
+
+#include <csignal>
+
+#if defined (__has_cpp_attribute) && __has_cpp_attribute (noreturn) >= 200809L
+[[noreturn]]
+#endif
+static
+void
+bad_optional_access_handler (int signal)
+{
+  if (SIGABRT != signal)
+  {
+    std::fprintf (stderr, "Wrong signal recieved: %d.\n", signal);
+    std::exit (EXIT_FAILURE);
+  }
+
+  std::printf ("SIGABRT correctly recieved.\n");
+  std::exit (EXIT_SUCCESS);
+}
+
+int
+main (void)
+{
+  std::signal (SIGABRT, bad_optional_access_handler);
+  const gch::optional_ref<int> r;
+  static_cast<void> (r.value ());
+  return 1;
+}
+
+#endif

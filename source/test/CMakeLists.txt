@@ -108,6 +108,25 @@ macro (add_optional_ref_ctest_executables)
         COMMAND
           ${_TARGET_NAME}
       )
+
+      set (_TARGET_NAME ${_TARGET_NAME_BASE}.no_exceptions.c++${version})
+
+      add_optional_ref_unit_test (${_TARGET_NAME} ${file})
+
+      target_compile_features (${_TARGET_NAME} PRIVATE cxx_std_${version})
+      target_compile_options (
+        ${_TARGET_NAME}
+        PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-fno-exceptions>
+        $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/EHs->
+      )
+
+      add_test (
+        NAME
+          ${_TARGET_NAME}
+        COMMAND
+          ${_TARGET_NAME}
+      )
     endforeach ()
   endforeach ()
 endmacro ()

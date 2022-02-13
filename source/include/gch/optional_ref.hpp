@@ -101,6 +101,12 @@
 #  endif
 #endif
 
+#if defined (__cpp_exceptions) && __cpp_exceptions >= 199711L
+#  ifndef GCH_EXCEPTIONS
+#    define GCH_EXCEPTIONS
+#  endif
+#endif
+
 #if defined (__cpp_impl_three_way_comparison) && __cpp_impl_three_way_comparison >= 201907L
 #  ifndef GCH_IMPL_THREE_WAY_COMPARISON
 #    define GCH_IMPL_THREE_WAY_COMPARISON
@@ -136,6 +142,13 @@
 #ifdef GCH_CLANG
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdocumentation" // Ignore @tparam warnings.
+#endif
+
+#ifdef GCH_EXCEPTIONS
+#  include <exception>
+#else
+#  include <cstdio>
+#  include <cstdlib>
 #endif
 
 namespace gch
@@ -188,6 +201,8 @@ namespace gch
 #  pragma clang diagnostic ignored "-Wweak-vtables" // Ignore warnings about virtual methods.
 #endif
 
+#ifdef GCH_EXCEPTIONS
+
   /**
    * An exception class for cases of bad access
    * to an `optional_ref`.
@@ -239,9 +254,11 @@ namespace gch
     const char *
     what (void) const noexcept override
     {
-      return "bad optional_ref access";
+      return "Cannot access the reference of an empty optional_ref.";
     }
   };
+
+#endif
 
 #ifdef GCH_CLANG
 #  pragma clang diagnostic pop
@@ -568,7 +585,16 @@ namespace gch
     value (void) const
     {
       if (! has_value ())
-        throw bad_optional_access();
+#ifdef GCH_EXCEPTIONS
+        throw bad_optional_access { };
+#else
+      {
+        std::fprintf (
+          stderr,
+          "[gch::optional_ref] Cannot access the reference of an empty optional_ref.\n");
+        std::abort ();
+      }
+#endif
       return *m_ptr;
     }
 
