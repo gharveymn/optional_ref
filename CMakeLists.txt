@@ -61,7 +61,7 @@ set (
   GCH_OPTIONAL_REF_INSTALL_SUPPORT_DIR
   "share/gch"
   CACHE STRING
-  "Specify where to install support files like GDB pretty printers."
+  "Specify where to install support files like GDB prettyprinters."
 )
 
 add_subdirectory (source)
