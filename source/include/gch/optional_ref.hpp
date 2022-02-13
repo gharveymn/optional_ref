@@ -2406,7 +2406,7 @@ namespace gch
   }
 
   /**
-   * Create a const version of an `optional_ref`.
+   * Creates a const version of an `optional_ref`.
    *
    * This can be useful for template code.
    *
