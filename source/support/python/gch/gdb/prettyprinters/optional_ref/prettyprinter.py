@@ -39,7 +39,7 @@ class GCHOptionalRefPrinter(object):
       return f'{self.val.type} [no contained reference]'
     if hasattr(self.maybe_ref_pp, 'children'):
       return f'{self.val.type} containing {self.maybe_ref_pp.to_string()}'
-    return self.val.type
+    return f'{self.val.type}'
 
   def display_hint(self):
     if hasattr(self.maybe_ref_pp, 'children') and hasattr(self.maybe_ref_pp, 'display_hint'):
